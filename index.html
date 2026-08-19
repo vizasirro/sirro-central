@@ -5,30 +5,397 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b6b57">
 <title>SIRRO Central</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17312b;background:#f4f7f6}
+*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}
+.topbar{background:#0b6b57;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}.brand-logo{width:62px;height:62px;object-fit:contain;border-radius:10px;background:#fff}
+.topbar h1{margin:0;font-size:27px}.topbar p{margin:2px 0 0;opacity:.92}.wrap{max-width:1180px;margin:18px auto;padding:0 14px}
+.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 12px #00000012;margin-bottom:16px}
+.narrow{max-width:430px;margin:42px auto}.login-card{text-align:center}.login-card img{max-width:150px;max-height:150px;object-fit:contain}
+label{display:block;font-weight:650;margin:9px 0}input,select,textarea{width:100%;padding:10px;border:1px solid #b9cbc5;border-radius:9px;margin-top:5px;font:inherit}
+textarea{min-height:86px}button{background:#0b6b57;color:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:750;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#0b6b57}.danger{background:#9b2c2c}.userbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tabs{display:flex;gap:8px;overflow:auto}.tabs button{white-space:nowrap;background:#e9f1ef;color:#24584d}.tabs button.active{background:#0b6b57;color:#fff}
+.grid{display:grid;gap:12px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stats article{margin:0}.stats span{display:block;color:#607a74}.stats strong{font-size:30px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}.formgrid h2,.formgrid .full,.formgrid button{grid-column:1/-1}
+.readonlybox{background:#f1f7f5;border-radius:10px;padding:12px}.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.item{border:1px solid #d7e4e0;border-radius:10px;padding:12px;margin:10px 0}.item .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.badge{display:inline-block;border-radius:999px;padding:4px 9px;background:#e7f2ef;font-size:12px;font-weight:800}.muted,.hint{color:#6a7f79;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions button{padding:7px 10px;font-size:13px}
+.notice{padding:10px 12px;border-radius:9px;background:#eef7f4;margin:8px 0}.error{background:#fff0f0;color:#8d2020}.ok{background:#edf8f0;color:#256536}
+.monitor{display:grid;gap:10px}.monitor details{border:1px solid #d9e2df;border-radius:10px;padding:10px;background:#fff}.monitor summary{cursor:pointer;font-weight:800}
+.user-form-extra{border-top:1px solid #e3ebe8;margin-top:12px;padding-top:10px}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
+</style>
 </head>
 <body>
-<header class="topbar"><div class="brand"><img src="logo-region-olancho.png" class="brand-logo" alt="Región Sanitaria de Olancho"><div><h1>SIRRO <small style="font-size:.45em">Central</small></h1><p>Sistema de Referencia–Respuesta Olancho</p></div></div><button id="logoutBtn" class="ghost hidden">Salir</button></header>
+<header class="topbar">
+  <div class="brand">
+    <img src="logo-region-olancho.png" class="brand-logo" alt="Región Sanitaria de Olancho">
+    <div><h1>SIRRO <small style="font-size:.45em">Central</small></h1><p>Sistema de Referencia–Respuesta Olancho</p></div>
+  </div>
+  <button id="logoutBtn" class="ghost hidden">Salir</button>
+</header>
+
 <main class="wrap">
 <section id="loginView" class="card narrow login-card">
-<img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho" style="max-width:130px;display:block;margin:auto">
-<h2>Ingreso a SIRRO Central</h2>
-<p class="hint">Base central segura · Supabase</p>
-<label>Usuario<input id="loginUser" autocomplete="username"></label>
-<label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
-<button id="loginBtn">Ingresar</button><p id="loginMsg" class="hint"></p>
+  <img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho">
+  <h2>Ingreso a SIRRO Central</h2>
+  <p class="hint">Base central segura · Supabase</p>
+  <label>Usuario<input id="loginUser" autocomplete="username"></label>
+  <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
+  <button id="loginBtn">Ingresar</button>
+  <div id="loginMsg"></div>
 </section>
+
 <section id="appView" class="hidden">
-<div class="userbar card"><div><strong id="userName"></strong><br><span id="userMeta"></span></div></div>
-<nav class="tabs card"><button data-tab="inicio" class="active">Inicio</button><button data-tab="nueva">Nueva referencia</button><button data-tab="referencias">Referencias</button><button data-tab="usuarios">Usuarios</button><button data-tab="auditoria">Auditoría</button></nav>
-<section id="tab-inicio" class="tabpane"><div class="grid stats"><article class="card"><span>Establecimientos</span><strong id="statEst">—</strong></article><article class="card"><span>Casos</span><strong id="statCasos">—</strong></article><article class="card"><span>Abiertos</span><strong id="statAbiertos">—</strong></article><article class="card"><span>Cerrados</span><strong id="statCerrados">—</strong></article></div><article class="card"><h2>SIRRO Central</h2><p>Los datos se almacenan en Supabase y están disponibles desde los dispositivos autorizados. La visibilidad depende del perfil asignado.</p></article></section>
-<section id="tab-nueva" class="tabpane hidden"><form id="refForm" class="card formgrid"><h2>Nueva referencia</h2><div class="readonlybox" id="originBox"></div><label>Nombre del paciente<input id="patientName" required></label><label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" required></label><label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label><label>Motivo<select id="refReason"><option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option><option value="EMERGENCIA_URGENCIA">Emergencia / urgencia</option><option value="HOSPITALIZACION">Hospitalización</option><option value="EXAMEN_PROCEDIMIENTO">Examen / procedimiento</option><option value="ATENCION_MATERNA">Atención materna</option><option value="ATENCION_PEDIATRICA">Atención pediátrica</option><option value="OTRO">Otro</option></select></label><label>Destino<select id="destFacility" required></select></label><label>Observación<textarea id="observation"></textarea></label><button type="submit">Registrar referencia</button><p id="refMsg" class="hint"></p></form></section>
-<section id="tab-referencias" class="tabpane hidden"><article class="card"><h2>Referencias</h2><div id="refsList" class="list"></div></article></section>
-<section id="tab-usuarios" class="tabpane hidden"><article class="card"><h2>Usuarios</h2><p>La creación y administración de usuarios se realiza de forma central según los permisos del Administrador Regional.</p><div id="usersList" class="list"></div></article></section>
-<section id="tab-auditoria" class="tabpane hidden"><article class="card"><h2>Auditoría</h2><div id="auditList" class="list"></div></article></section>
-</section></main>
-<script src="config.js"></script>
-<script src="app.js"></script>
-</body></html>
+  <div class="userbar card"><div><strong id="userName"></strong><br><span id="userMeta"></span></div><span id="connState" class="badge">Conectado</span></div>
+  <nav class="tabs card" id="tabs">
+    <button data-tab="inicio" class="active">Inicio</button>
+    <button data-tab="nueva">Nueva referencia</button>
+    <button data-tab="recibidas">Recibidas</button>
+    <button data-tab="seguimiento">Seguimiento</button>
+    <button data-tab="monitoreo">Monitoreo</button>
+    <button data-tab="evaluacion">Evaluación R/R</button>
+    <button data-tab="usuarios">Usuarios</button>
+    <button data-tab="auditoria">Auditoría</button>
+  </nav>
+
+  <section id="tab-inicio" class="tabpane">
+    <div class="grid stats">
+      <article class="card"><span>Establecimientos</span><strong id="statEst">—</strong></article>
+      <article class="card"><span>Casos</span><strong id="statCasos">—</strong></article>
+      <article class="card"><span>Abiertos</span><strong id="statAbiertos">—</strong></article>
+      <article class="card"><span>Cerrados</span><strong id="statCerrados">—</strong></article>
+    </div>
+    <article class="card"><h2>Flujo SIRRO</h2><p>Referencia → envío → recepción → atención → respuesta/contrarreferencia o referencia secundaria → confirmación y cierre.</p></article>
+  </section>
+
+  <section id="tab-nueva" class="tabpane hidden">
+    <form id="refForm" class="card formgrid">
+      <h2>Nueva referencia</h2>
+      <div class="readonlybox full" id="originBox"></div>
+      <label>Nombre del paciente<input id="patientName" required></label>
+      <label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" pattern="[0-9]{13}" required></label>
+      <label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label>
+      <label>Motivo<select id="refReason">
+        <option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option>
+        <option value="EMERGENCIA_URGENCIA">Emergencia / urgencia</option>
+        <option value="HOSPITALIZACION">Hospitalización</option>
+        <option value="EXAMEN_PROCEDIMIENTO">Examen / procedimiento</option>
+        <option value="ATENCION_MATERNA">Atención materna</option>
+        <option value="ATENCION_PEDIATRICA">Atención pediátrica</option>
+        <option value="OTRO">Otro</option>
+      </select></label>
+      <label class="full">Destino<select id="destFacility" required></select></label>
+      <label class="full">Observación<textarea id="observation"></textarea></label>
+      <button type="submit">Registrar y enviar referencia</button>
+      <div id="refMsg" class="full"></div>
+    </form>
+  </section>
+
+  <section id="tab-recibidas" class="tabpane hidden">
+    <article class="card"><h2>Referencias recibidas</h2><div id="receivedList"></div></article>
+  </section>
+
+  <section id="tab-seguimiento" class="tabpane hidden">
+    <article class="card">
+      <h2>Seguimiento</h2>
+      <div class="filters"><input id="searchRef" placeholder="Buscar código o paciente"><select id="statusFilter"><option value="">Todos los estados</option></select><button id="refreshBtn" type="button">Actualizar</button></div>
+      <div id="trackingList"></div>
+    </article>
+  </section>
+
+  <section id="tab-monitoreo" class="tabpane hidden">
+    <article class="card"><h2>Monitoreo</h2><p class="muted">Vista según el alcance permitido por el perfil y las políticas de seguridad de la base.</p><div id="monitoring" class="monitor"></div></article>
+  </section>
+
+  <section id="tab-evaluacion" class="tabpane hidden">
+    <article class="card"><h2>Evaluación hospitalaria R/R</h2><div id="rrSummary" class="grid stats"></div><div id="rrHospitals" class="monitor"></div></article>
+  </section>
+
+  <section id="tab-usuarios" class="tabpane hidden">
+    <article class="card">
+      <h2>Usuarios y permisos</h2>
+      <form id="userForm" class="formgrid">
+        <label>Nombre completo<input id="newName" required></label>
+        <label>Usuario<input id="newUsername" required autocomplete="off"></label>
+        <label>Contraseña<input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Identidad<input id="newIdentity" pattern="[0-9]{13}" minlength="13" maxlength="13" required></label>
+        <label>Correo personal/institucional<input id="newEmail" type="email" required></label>
+        <label>Teléfono<input id="newPhone" pattern="[0-9]{8}" minlength="8" maxlength="8" required></label>
+        <label>Cargo / función<input id="newJob" required></label>
+        <label>Rol<select id="newRole" required>
+          <option value="">Seleccione</option><option>ADMIN_REGIONAL</option><option>ECOR</option><option>JEFE_MUNICIPAL</option>
+          <option>USUARIO_US</option><option>USUARIO_HOSPITAL</option><option>AUDITOR_CONSULTA</option>
+        </select></label>
+        <label id="newEcorWrap" class="hidden">ECOR<select id="newEcor"></select></label>
+        <label id="newMunicipioWrap" class="hidden">Municipio<select id="newMunicipio"></select></label>
+        <label id="newEstWrap" class="hidden">Establecimiento<select id="newEst"></select></label>
+        <button type="submit">Crear usuario</button>
+        <div id="userMsg" class="full"></div>
+      </form>
+      <div class="user-form-extra">
+        <h3>Reinicio general de pruebas</h3>
+        <p class="muted">Solo para Administrador Regional. Elimina referencias, tramos y movimientos de prueba, pero conserva usuarios, establecimientos, municipios, ECOR, rutas y configuración.</p>
+        <div class="actions">
+          <button type="button" class="ghost" id="setResetKeyBtn">Configurar / cambiar clave especial</button>
+          <button type="button" class="danger" id="resetAllBtn">Borrar datos de prueba y comenzar de nuevo</button>
+        </div>
+        <div id="resetMsg"></div>
+      </div>
+      <div id="usersList"></div>
+    </article>
+  </section>
+
+  <section id="tab-auditoria" class="tabpane hidden">
+    <article class="card"><h2>Auditoría</h2><div id="auditList"></div></article>
+  </section>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL="https://nndwrcwahiqlrkbedxqa.supabase.co";
+const SUPABASE_KEY="sb_publishable_l4icMHnXToufRfc7Tvs1UA_22s7z7QZ";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], users=[];
+const esc=(v='')=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const fmt=x=>x?new Date(x).toLocaleString('es-HN'):'';
+const authEmail=u=>{u=u.trim().toLowerCase();return u==='admin'?'victorzepeda1@gmail.com':u.replace(/[^a-z0-9._+-]/g,'_')+'@users.sirro.net'};
+function showMsg(sel,text,type=''){const e=$(sel);if(!e)return;e.className='notice '+type;e.textContent=text;e.style.display=text?'block':'none'}
+function fac(id){return establishments.find(x=>x.id===id)}
+function mun(id){return municipios.find(x=>x.id===id)}
+function ecor(id){return ecors.find(x=>x.id===id)}
+function roleClinical(){return ['USUARIO_US','USUARIO_HOSPITAL'].includes(profile?.rol)}
+function isAdmin(){return profile?.rol==='ADMIN_REGIONAL'}
+function isAudit(){return ['ADMIN_REGIONAL','AUDITOR_CONSULTA'].includes(profile?.rol)}
+
+async function login(){
+  showMsg('#loginMsg','Ingresando…');
+  const u=$('#loginUser').value.trim(), p=$('#loginPass').value;
+  if(!u||!p)return showMsg('#loginMsg','Escriba usuario y contraseña.','error');
+  const {data,error}=await sb.auth.signInWithPassword({email:authEmail(u),password:p});
+  if(error)return showMsg('#loginMsg','Usuario o contraseña incorrectos.','error');
+  await enter(data.user);
+}
+async function enter(user){
+  currentUser=user;
+  const {data,error}=await sb.from('perfiles').select('*').eq('id',user.id).maybeSingle();
+  if(error||!data){await sb.auth.signOut();return showMsg('#loginMsg','El usuario no tiene perfil SIRRO.','error')}
+  profile=data;
+  if(profile.estado!=='ACTIVO'){await sb.auth.signOut();return showMsg('#loginMsg','Usuario no activo: '+profile.estado,'error')}
+  $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden'); $('#logoutBtn').classList.remove('hidden');
+  $('#userName').textContent=profile.nombre_completo;
+  $('#userMeta').textContent=[profile.rol,profile.cargo_funcion].filter(Boolean).join(' · ');
+  await loadCatalogs(); configureTabs(); await refreshAll();
+}
+async function loadCatalogs(){
+  let r=await sb.from('establecimientos').select('*').eq('activo',true).order('nombre'); establishments=r.data||[];
+  r=await sb.from('municipios').select('*').eq('activo',true).order('nombre'); municipios=r.data||[];
+  r=await sb.from('ecor').select('*').eq('activo',true).order('nombre'); ecors=r.data||[];
+  r=await sb.from('rutas_referencia').select('*').eq('activo',true); routes=r.data||[];
+  const o=fac(profile.establecimiento_id);
+  $('#originBox').innerHTML=o?`<strong>Origen:</strong> ${esc(o.nombre)} · RUPS ${esc(o.codigo_rups)}${mun(o.municipio_id)?' · '+esc(mun(o.municipio_id).nombre):''}`:'';
+  fillDestinations(); fillUserCatalogs();
+}
+function configureTabs(){
+  $('button[data-tab="nueva"]').classList.toggle('hidden',!roleClinical()||!profile.establecimiento_id);
+  $('button[data-tab="recibidas"]').classList.toggle('hidden',!roleClinical()||!profile.establecimiento_id);
+  $('button[data-tab="usuarios"]').classList.toggle('hidden',!isAdmin());
+  $('button[data-tab="auditoria"]').classList.toggle('hidden',!isAudit());
+  $('button[data-tab="evaluacion"]').classList.toggle('hidden',!isAudit());
+}
+function fillDestinations(){
+  const sel=$('#destFacility'); if(!sel)return;
+  const t=$('#refType').value;
+  let rr=routes.filter(r=>r.establecimiento_origen_id===profile.establecimiento_id && (t==='URGENTE'?r.permite_urgente:r.permite_no_urgente));
+  let list=rr.map(r=>fac(r.establecimiento_destino_id)).filter(Boolean);
+  const uniq=[...new Map(list.map(x=>[x.id,x])).values()];
+  sel.innerHTML='<option value="">Seleccione</option>'+uniq.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
+  if(!uniq.length) sel.innerHTML='<option value="">No hay ruta autorizada para este tipo</option>';
+}
+async function refreshAll(){
+  await Promise.all([loadCases(),loadTramos(),loadUsers(),loadAudit()]);
+  renderStats(); renderReceived(); renderTracking(); renderMonitoring(); renderEvaluation(); renderUsers();
+}
+async function loadCases(){
+  const {data,error}=await sb.from('casos_referencia').select('*').order('creado_en',{ascending:false}).limit(500);
+  cases=error?[]:(data||[]);
+}
+async function loadTramos(){
+  const {data,error}=await sb.from('tramos_referencia').select('*').order('creado_en',{ascending:false}).limit(1000);
+  tramos=error?[]:(data||[]);
+}
+async function loadUsers(){
+  if(!isAdmin())return users=[];
+  const {data}=await sb.from('perfiles').select('*').order('nombre_completo'); users=data||[];
+}
+async function loadAudit(){
+  if(!isAudit())return $('#auditList').innerHTML='';
+  const {data,error}=await sb.from('auditoria').select('*').order('creado_en',{ascending:false}).limit(200);
+  if(error)return $('#auditList').innerHTML='<p class="muted">No se pudo cargar la auditoría.</p>';
+  $('#auditList').innerHTML=(data||[]).map(a=>`<div class="item"><strong>${esc(a.accion)}</strong> · ${esc(a.tabla)}<br><small>${fmt(a.creado_en)}${a.motivo?' · '+esc(a.motivo):''}</small></div>`).join('')||'<p class="muted">Sin registros.</p>';
+}
+function renderStats(){
+  $('#statEst').textContent=establishments.length;
+  $('#statCasos').textContent=cases.length;
+  $('#statAbiertos').textContent=cases.filter(x=>['ABIERTO','EN_PROCESO'].includes(x.estado_actual)).length;
+  $('#statCerrados').textContent=cases.filter(x=>String(x.estado_actual).startsWith('CERRADO')).length;
+}
+function caseOf(id){return cases.find(c=>c.id===id)}
+function tramoItem(t,withActions=true){
+  const c=caseOf(t.caso_id), o=fac(t.establecimiento_origen_id), d=fac(t.establecimiento_destino_id);
+  const buttons=[];
+  if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && t.estado_actual==='ENVIADO'){
+    buttons.push(`<button onclick="receiveTramo('${t.id}','AMBULATORIO')">Recibir ambulatorio</button>`,`<button onclick="receiveTramo('${t.id}','HOSPITALIZADO')">Recibir hospitalizado</button>`);
+  }
+  if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && ['EN_ATENCION','HOSPITALIZADO'].includes(t.estado_actual)){
+    buttons.push(`<button onclick="answerTramo('${t.id}')">Enviar respuesta</button>`);
+    if(profile.rol==='USUARIO_HOSPITAL')buttons.push(`<button class="ghost" onclick="secondaryTramo('${t.id}')">Referencia secundaria</button>`);
+  }
+  if(withActions && profile.establecimiento_id===t.establecimiento_origen_id && t.estado_actual==='RESPUESTA_ENVIADA'){
+    buttons.push(`<button onclick="closeTramo('${t.id}')">Confirmar respuesta y cerrar</button>`);
+  }
+  return `<div class="item"><div class="row"><div><strong>${esc(c?.codigo_visible||'')}</strong> · ${esc(c?.paciente_nombre||'')}<br><small>${esc(o?.nombre||'')} → ${esc(d?.nombre||'')} · Tramo ${t.numero_tramo} · ${fmt(t.creado_en)}</small></div><span class="badge">${esc(t.estado_actual)}</span></div>${buttons.length?`<div class="actions">${buttons.join('')}</div>`:''}</div>`;
+}
+function renderReceived(){
+  if(!roleClinical())return;
+  const rows=tramos.filter(t=>t.establecimiento_destino_id===profile.establecimiento_id && ['ENVIADO','EN_ATENCION','HOSPITALIZADO'].includes(t.estado_actual));
+  $('#receivedList').innerHTML=rows.map(t=>tramoItem(t,true)).join('')||'<p class="muted">No hay referencias pendientes.</p>';
+}
+function renderTracking(){
+  const statuses=[...new Set(tramos.map(t=>t.estado_actual))].sort();
+  const sf=$('#statusFilter'), old=sf.value;
+  sf.innerHTML='<option value="">Todos los estados</option>'+statuses.map(s=>`<option>${esc(s)}</option>`).join(''); sf.value=old;
+  const q=$('#searchRef').value.trim().toLowerCase(), st=sf.value;
+  let rows=tramos;
+  if(st)rows=rows.filter(t=>t.estado_actual===st);
+  if(q)rows=rows.filter(t=>{const c=caseOf(t.caso_id);return [c?.codigo_visible,c?.paciente_nombre,c?.paciente_identidad].some(v=>String(v||'').toLowerCase().includes(q))});
+  $('#trackingList').innerHTML=rows.map(t=>tramoItem(t,true)).join('')||'<p class="muted">Sin resultados.</p>';
+}
+function renderMonitoring(){
+  const groups=new Map();
+  for(const t of tramos){const o=fac(t.establecimiento_origen_id);if(!o)continue;const name=ecor(o.ecor_id)?.nombre||'Sin ECOR';if(!groups.has(name))groups.set(name,[]);groups.get(name).push(t)}
+  $('#monitoring').innerHTML=[...groups.entries()].sort().map(([name,rows])=>{
+    const open=rows.filter(t=>!['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO','ANULADO','RECHAZADO'].includes(t.estado_actual)).length;
+    const ans=rows.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;
+    return `<details><summary>${esc(name)} · ${rows.length} tramos</summary><p>Abiertos: <strong>${open}</strong> · Con respuesta/cierre: <strong>${ans}</strong></p></details>`
+  }).join('')||'<p class="muted">Sin datos visibles.</p>';
+}
+function renderEvaluation(){
+  if(!isAudit())return;
+  const hospitals=establishments.filter(e=>String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'));
+  const total=tramos.length, answered=tramos.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length, closed=tramos.filter(t=>t.estado_actual==='CERRADO').length;
+  $('#rrSummary').innerHTML=`<article class="card"><span>Tramos visibles</span><strong>${total}</strong></article><article class="card"><span>Con respuesta</span><strong>${answered}</strong></article><article class="card"><span>Cerrados</span><strong>${closed}</strong></article><article class="card"><span>Nivel R/R</span><strong>${total?Math.round(answered*100/total):0}%</strong></article>`;
+  $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
+}
+async function createRef(e){
+  e.preventDefault(); showMsg('#refMsg','Registrando y enviando…');
+  const payload={p_destino:$('#destFacility').value,p_paciente_identidad:$('#patientId').value.trim(),p_paciente_nombre:$('#patientName').value.trim(),p_tipo:$('#refType').value,p_motivo:$('#refReason').value,p_observacion:$('#observation').value.trim()||null};
+  const {data,error}=await sb.rpc('crear_referencia',payload);
+  if(error)return showMsg('#refMsg',error.message,'error');
+  const row=Array.isArray(data)?data[0]:data;
+  if(row?.tramo_id){const sent=await sb.rpc('enviar_tramo',{p_tramo:row.tramo_id});if(sent.error)return showMsg('#refMsg','Referencia creada, pero no se pudo enviar: '+sent.error.message,'error')}
+  showMsg('#refMsg','Referencia registrada y enviada correctamente: '+(row?.codigo_visible||''),'ok');
+  e.target.reset(); fillDestinations(); await refreshAll();
+}
+async function receiveTramo(id,modalidad){
+  const {error}=await sb.rpc('recibir_tramo',{p_tramo:id,p_modalidad:modalidad}); if(error)return alert(error.message); await refreshAll();
+}
+async function answerTramo(id){
+  const detail=prompt('Escriba la respuesta / contrarreferencia:'); if(!detail?.trim())return;
+  const {error}=await sb.rpc('sirro_enviar_respuesta',{p_tramo:id,p_detalle:detail.trim()}); if(error)return alert(error.message); await refreshAll();
+}
+async function secondaryTramo(id){
+  const rr=routes.filter(r=>r.establecimiento_origen_id===profile.establecimiento_id);
+  const list=[...new Map(rr.map(r=>[r.establecimiento_destino_id,fac(r.establecimiento_destino_id)]).filter(x=>x[1])).values()];
+  if(!list.length)return alert('No hay destinos secundarios autorizados para este hospital.');
+  const text=list.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n');
+  const n=Number(prompt('Seleccione destino:\n'+text)); if(!n||!list[n-1])return;
+  const detail=prompt('Justificación de la referencia secundaria:'); if(!detail?.trim())return;
+  const {error}=await sb.rpc('sirro_referencia_secundaria',{p_tramo:id,p_destino:list[n-1].id,p_detalle:detail.trim()}); if(error)return alert(error.message); await refreshAll();
+}
+async function closeTramo(id){
+  if(!confirm('¿Confirmar que recibió la respuesta y cerrar este tramo?'))return;
+  const {error}=await sb.rpc('confirmar_respuesta_y_cerrar',{p_tramo:id}); if(error)return alert(error.message); await refreshAll();
+}
+function fillUserCatalogs(){
+  $('#newEcor').innerHTML='<option value="">Seleccione</option>'+ecors.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+  $('#newMunicipio').innerHTML='<option value="">Seleccione</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+  $('#newEst').innerHTML='<option value="">Seleccione</option>'+establishments.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
+}
+function userRoleUI(){
+  const r=$('#newRole').value;
+  $('#newEcorWrap').classList.toggle('hidden',!['ECOR','JEFE_MUNICIPAL'].includes(r));
+  $('#newMunicipioWrap').classList.toggle('hidden',r!=='JEFE_MUNICIPAL');
+  $('#newEstWrap').classList.toggle('hidden',!['USUARIO_US','USUARIO_HOSPITAL'].includes(r));
+}
+async function createUser(e){
+  e.preventDefault(); showMsg('#userMsg','Creando usuario…');
+  const body={username:$('#newUsername').value.trim(),password:$('#newPassword').value,profile:{
+    nombre_completo:$('#newName').value.trim(),identidad:$('#newIdentity').value.trim(),correo:$('#newEmail').value.trim(),
+    telefono:$('#newPhone').value.trim(),cargo_funcion:$('#newJob').value.trim(),rol:$('#newRole').value,
+    ecor_id:$('#newEcor').value||null,municipio_id:$('#newMunicipio').value||null,establecimiento_id:$('#newEst').value||null,notificaciones_activas:true
+  }};
+  if(body.profile.rol==='USUARIO_US'||body.profile.rol==='USUARIO_HOSPITAL'){
+    const e0=fac(body.profile.establecimiento_id); if(e0){body.profile.ecor_id=e0.ecor_id||null;body.profile.municipio_id=e0.municipio_id||null}
+  }
+  const {data,error}=await sb.functions.invoke('sirro-create-user',{body});
+  if(error)return showMsg('#userMsg',error.message,'error');
+  if(data?.error)return showMsg('#userMsg',data.error,'error');
+  showMsg('#userMsg','Usuario creado correctamente: '+body.username,'ok'); e.target.reset(); userRoleUI(); await loadUsers(); renderUsers();
+}
+function renderUsers(){
+  if(!isAdmin())return;
+  $('#usersList').innerHTML=users.map(u=>`<div class="item"><div class="row"><div><strong>${esc(u.nombre_completo)}</strong><br><small>${esc(u.rol)} · ${esc(u.correo)} · ${esc(u.telefono)}</small></div><span class="badge">${esc(u.estado)}</span></div><div class="actions">${u.id!==profile.id?`<button class="ghost" onclick="setUserState('${u.id}','ACTIVO')">Activar</button><button class="ghost" onclick="setUserState('${u.id}','AUSENCIA_TEMPORAL')">Ausencia</button><button class="ghost" onclick="setUserState('${u.id}','SUSPENDIDO')">Suspender</button><button class="ghost" onclick="setUserState('${u.id}','INACTIVO')">Inactivar</button>`:''}</div></div>`).join('')||'<p class="muted">Sin usuarios.</p>';
+}
+async function setUserState(id,state){
+  const reason=prompt('Motivo del cambio de estado:'); if(!reason?.trim())return;
+  const {error}=await sb.rpc('sirro_admin_set_user_estado',{p_usuario:id,p_estado:state,p_motivo:reason.trim()}); if(error)return alert(error.message); await loadUsers();renderUsers();
+}
+
+async function configureResetKey(){
+  if(!isAdmin()) return;
+  const key=prompt('Defina una clave especial de reinicio (mínimo 8 caracteres):');
+  if(key===null)return;
+  if(key.length<8)return alert('La clave debe tener al menos 8 caracteres.');
+  const confirmKey=prompt('Confirme la clave especial:');
+  if(confirmKey===null)return;
+  if(key!==confirmKey)return alert('Las claves no coinciden.');
+  showMsg('#resetMsg','Guardando clave especial…');
+  const {error}=await sb.rpc('sirro_configurar_clave_reinicio',{p_clave:key});
+  if(error)return showMsg('#resetMsg',error.message,'error');
+  showMsg('#resetMsg','Clave especial configurada correctamente.','ok');
+}
+
+async function resetAllTestData(){
+  if(!isAdmin())return;
+  const first=confirm('Esta acción borrará TODAS las referencias, tramos y movimientos de prueba. Los usuarios, establecimientos, rutas y configuración se conservarán. ¿Desea continuar?');
+  if(!first)return;
+  const phrase=prompt('Para confirmar, escriba exactamente: BORRAR PRUEBAS SIRRO');
+  if(phrase!=='BORRAR PRUEBAS SIRRO')return alert('Confirmación cancelada.');
+  const key=prompt('Escriba la clave especial de reinicio:');
+  if(!key)return;
+  showMsg('#resetMsg','Eliminando datos de prueba…');
+  const {data,error}=await sb.rpc('sirro_reiniciar_datos_prueba',{p_clave:key});
+  if(error)return showMsg('#resetMsg',error.message,'error');
+  const r=Array.isArray(data)?data[0]:data;
+  showMsg('#resetMsg',`Reinicio completado. Casos: ${r?.casos_eliminados??0}, tramos: ${r?.tramos_eliminados??0}, movimientos: ${r?.movimientos_eliminados??0}.`,'ok');
+  await refreshAll();
+}
+
+$$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.tabpane').forEach(x=>x.classList.add('hidden'));$('#tab-'+b.dataset.tab).classList.remove('hidden')});
+$('#loginBtn').onclick=login; $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations);
+$('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
+$('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
+$('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
+
+(async()=>{const {data:{session}}=await sb.auth.getSession();if(session)await enter(session.user)})();
+</script>
+</body>
+</html>
