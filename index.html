@@ -1,272 +1,34 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b6b57" />
-  <title>SIRRO - Sistema de Referencia Respuesta Olancho</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b6b57">
+<title>SIRRO Central</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <img src="logo-region-olancho.png" alt="Región Sanitaria Departamental de Olancho" class="brand-logo" />
-      <div><h1>SIRRO <small style="font-size:.45em">v0.14</small></h1><p>Sistema de Referencia Respuesta Olancho</p></div>
-    </div>
-    <button id="installBtn" class="ghost hidden">Instalar app</button>
-  </header>
-
-  <div class="test-banner">AMBIENTE LOCAL DE PRUEBAS — USAR ÚNICAMENTE DATOS FICTICIOS</div>
-
-  <main class="wrap">
-    <section id="loginView" class="card narrow login-card">
-      <button type="button" id="logoEnterBtn" class="logo-enter" aria-label="Ingresar a SIRRO">
-        <img src="logo-region-olancho.png" alt="Región Sanitaria Departamental de Olancho" />
-      </button>
-      <h2>Ingreso a SIRRO</h2>
-      <p class="hint">Toque el logo o ingrese sus credenciales.</p>
-      <label>Usuario
-        <input id="loginUser" autocomplete="username" />
-      </label>
-      <label>Contraseña
-        <input id="loginPass" type="password" autocomplete="current-password" />
-      </label>
-      <button id="loginBtn">Ingresar</button>
-      <p class="hint">Acceso inicial de validación: admin / sirro2026. Cambiar antes de uso real.</p>
-    </section>
-
-    <section id="appView" class="hidden">
-      <div class="userbar card">
-        <div><strong id="userName"></strong><br><span id="userMeta"></span></div>
-        <div class="user-actions"><button id="changePasswordBtn" class="ghost">Cambiar contraseña</button><button id="logoutBtn" class="ghost">Salir</button></div>
-      </div>
-
-      <nav class="tabs card" id="tabs">
-        <button data-tab="inicio" class="active">Inicio</button>
-        <button data-tab="nueva">Nueva referencia</button>
-        <button data-tab="recibidas">Recibidas</button>
-        <button data-tab="seguimiento">Seguimiento</button>
-        <button data-tab="monitoreo">Monitoreo</button>
-        <button data-tab="evaluacion" id="evaluationTabBtn">Evaluación R/R</button>
-        <button data-tab="usuarios" id="usersTabBtn">Usuarios</button>
-        <button data-tab="auditoria">Auditoría</button>
-      </nav>
-
-      <section id="tab-inicio" class="tabpane">
-        <div class="grid stats">
-          <article class="card"><span>Pendientes</span><strong id="statPendientes">0</strong></article>
-          <article class="card"><span>Con respuesta</span><strong id="statRespuesta">0</strong></article>
-          <article class="card"><span>A Tegucigalpa</span><strong id="statTegus">0</strong></article>
-          <article class="card"><span>Cerradas</span><strong id="statCerradas">0</strong></article>
-        </div>
-        <article class="card">
-          <h2>Flujo SIRRO</h2>
-          <p>Referencia → Recepción → Evaluación → Respuesta/Contrarreferencia o Referencia secundaria → Seguimiento → Cierre.</p>
-        </article>
-      </section>
-
-      <section id="tab-nueva" class="tabpane hidden">
-        <form id="refForm" class="card formgrid">
-          <h2>Nueva referencia</h2>
-          <div class="readonlybox">
-            <strong>Unidad que refiere:</strong> <span id="originFacility"></span><br>
-            <strong>Municipio:</strong> <span id="originMunicipality"></span><br>
-            <strong>ECOR:</strong> <span id="originEcor"></span><br>
-            <strong>Código RUPS:</strong> <span id="originRups"></span>
-          </div>
-          <label>Nombre del paciente
-            <input id="patientName" required />
-          </label>
-          <label>Número de identidad
-            <input id="patientId" inputmode="numeric" pattern="[0-9]{13}" maxlength="13" minlength="13" required />
-          </label>
-          <label>Número de celular de contacto del paciente
-            <input id="patientPhone" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" minlength="8" required />
-          </label>
-          <label>Motivo de referencia / Diagnóstico
-            <textarea id="reason" required></textarea>
-          </label>
-          <label>Servicio requerido
-            <select id="service" required>
-              <option value="">Seleccione</option>
-              <option>Emergencia</option><option>Medicina interna</option><option>Cirugía</option>
-              <option>Pediatría</option><option>Gineco-obstetricia</option><option>Ortopedia</option><option>Tomografía</option><option>Resonancia magnética</option><option>Otro</option>
-            </select>
-          </label>
-          <label id="serviceOtherWrap" class="hidden">Especifique otro servicio/procedimiento
-            <input id="serviceOther" />
-          </label>
-          <label>Municipio de destino
-            <select id="destMunicipality" required></select>
-          </label>
-          <label>Establecimiento de destino
-            <select id="destFacility" required></select>
-          </label>
-          <label id="destOtherWrap" class="hidden">Especifique otro establecimiento de destino
-            <input id="destOther" />
-          </label>
-          <button type="submit">Enviar referencia</button>
-        </form>
-      </section>
-
-      <section id="tab-recibidas" class="tabpane hidden">
-        <article class="card">
-          <h2>Referencias recibidas</h2>
-          <div id="receivedList" class="list"></div>
-        </article>
-      </section>
-
-      <section id="tab-seguimiento" class="tabpane hidden">
-        <article class="card">
-          <h2>Seguimiento</h2>
-          <div class="filters">
-            <select id="statusFilter"><option value="">Todos los estados</option></select>
-            <input id="searchRef" placeholder="Buscar código o paciente" />
-          </div>
-          <div id="trackingList" class="list"></div>
-        </article>
-      </section>
-
-      <section id="tab-monitoreo" class="tabpane hidden">
-        <article class="card">
-          <h2>Monitoreo regional por ECOR</h2>
-          <p class="muted" id="monitorScopeNote">Vista jerárquica según el ámbito del usuario. Los perfiles Regional, ECOR y Municipio son de <strong>solo monitoreo</strong>.</p>
-          <div id="regionalSummary" class="grid stats"></div>
-          <div id="ecorMonitoring" class="monitoring"></div>
-        </article>
-      </section>
-
-
-      <section id="tab-evaluacion" class="tabpane hidden">
-        <article class="card">
-          <h2>Evaluación hospitalaria de Referencia–Respuesta</h2>
-          <p class="muted">Indicadores calculados automáticamente con la trazabilidad registrada en SIRRO. En esta versión local se actualizan inmediatamente con los datos de este dispositivo; la actualización multiestablecimiento en tiempo real se habilitará en SIRRO Central.</p>
-          <div class="filters rr-filters">
-            <label>Hospital
-              <select id="rrHospital"></select>
-            </label>
-            <label>Período
-              <select id="rrPeriod">
-                <option value="month">Mes actual</option>
-                <option value="today">Hoy</option>
-                <option value="year">Año actual</option>
-                <option value="all">Todo el período</option>
-              </select>
-            </label>
-          </div>
-          <div id="rrSummary" class="grid stats rr-stats"></div>
-          <div id="rrTiming" class="grid stats rr-stats"></div>
-          <div id="rrHospitalComparison" class="monitoring"></div>
-          <p class="hint">Nivel R/R = respuestas/contrarreferencias emitidas ÷ referencias evaluadas por el hospital. Los tiempos se calculan a partir de los movimientos registrados por cada hospital.</p>
-        </article>
-      </section>
-
-      <section id="tab-usuarios" class="tabpane hidden">
-        <article class="card">
-          <h2>Usuarios y permisos</h2>
-          <p class="muted">Crear usuarios individuales y asignarlos a un ECOR, municipio, US u hospital.</p>
-          <form id="userForm" class="formgrid compact-form">
-            <label>Nombre completo
-              <input id="newUserName" required />
-            </label>
-            <label>Usuario
-              <input id="newUsername" required autocomplete="off" />
-            </label>
-            <label>Contraseña
-              <input id="newPassword" type="password" required autocomplete="new-password" minlength="8" />
-            </label>
-            <label>Confirmar contraseña
-              <input id="confirmPassword" type="password" required autocomplete="new-password" minlength="8" />
-            </label>
-            <label>Nivel de acceso
-              <select id="newUserLevel" required>
-                <option value="">Seleccione</option>
-                <option value="REGIONAL">Administrador Regional</option>
-                <option value="SOLO_LECTURA">SOLO LECTURA (Auditor / Consulta)</option>
-                <option value="ECOR">ECOR</option>
-                <option value="MUNICIPIO">Municipio</option>
-                <option value="ESTABLECIMIENTO">Unidad de Salud</option>
-                <option value="HOSPITAL">Hospital</option>
-              </select>
-            </label>
-            <label id="ecorUserWrap" class="hidden">ECOR
-              <select id="newUserEcor"></select>
-            </label>
-            <label id="municipalityUserWrap" class="hidden">Municipio
-              <select id="newUserMunicipality"></select>
-            </label>
-            <label id="facilityMunicipalityWrap" class="hidden">Municipio de la Unidad de Salud
-              <select id="newUserFacilityMunicipality"></select>
-            </label>
-            <label id="facilityUserWrap" class="hidden">Establecimiento
-              <select id="newUserFacility"></select>
-            </label>
-            <button type="submit">Crear usuario</button>
-          </form>
-          <p class="hint">Cada persona debe tener credenciales propias. No comparta contraseñas entre empleados.</p>
-          <div class="backup-tools">
-            <h3>Respaldo local para validación</h3>
-            <p class="muted">Permite copiar usuarios y datos de prueba entre dispositivos. No sustituye una base central ni sincroniza en tiempo real.</p>
-            <button type="button" onclick="exportBackup()">Exportar respaldo JSON</button>
-            <label class="file-label">Importar respaldo JSON
-              <input id="backupFile" type="file" accept=".json,application/json" />
-            </label>
-          </div>
-          <div class="reset-tools">
-            <h3>Control de pruebas</h3>
-            <p class="muted">Disponible únicamente para el Administrador Regional. La limpieza conserva usuarios, establecimientos, perfiles y configuración.</p>
-            <button type="button" id="setResetKeyBtn" class="ghost">Configurar / cambiar clave especial de reinicio</button>
-            <button type="button" id="resetTestBtn" class="danger">Limpiar referencias y respuestas de prueba</button>
-          </div>
-          <div class="user-bulk-tools">
-            <h3>Gestión de usuarios</h3>
-            <button type="button" class="ghost" onclick="bulkUserAction('activate')">Activar seleccionados</button>
-            <button type="button" class="ghost" onclick="bulkUserAction('deactivate')">Desactivar seleccionados</button>
-            <button type="button" class="danger ghost" onclick="bulkUserAction('delete')">Eliminar seleccionados</button>
-          </div>
-          <div id="usersList" class="list"></div>
-        </article>
-      </section>
-
-      <section id="tab-auditoria" class="tabpane hidden">
-        <article class="card">
-          <h2>Auditoría</h2>
-          <div id="auditList" class="list"></div>
-        </article>
-      </section>
-    </section>
-  </main>
-
-  <dialog id="detailDialog">
-    <div class="dialogform detail-dialog">
-      <h3>Detalle de referencia</h3>
-      <div id="detailContent"></div>
-      <menu><button type="button" id="closeDetailBtn" class="ghost">Cerrar</button></menu>
-    </div>
-  </dialog>
-
-  <dialog id="actionDialog">
-    <form method="dialog" id="actionForm" class="dialogform">
-      <h3 id="dialogTitle">Gestionar referencia</h3>
-      <p id="dialogInfo"></p>
-      <div id="receiveActions">
-        <button value="receive" data-action="receive">Marcar RECIBIDA</button>
-        <button value="evaluate" data-action="evaluate">Marcar EVALUADA</button>
-        <button value="answer" data-action="answer">RESPUESTA O CONTRARREFERENCIA</button>
-        <button value="secondary" data-action="secondary">REFERENCIA SECUNDARIA</button>
-        <button value="externalResponse" data-action="externalResponse">REGISTRAR RESPUESTA EXTERNA</button>
-        <button value="close" data-action="close">CERRAR CASO</button>
-      </div>
-      <label id="notesWrap">Nota / respuesta
-        <textarea id="actionNotes"></textarea>
-      </label>
-      <menu><button value="cancel" class="ghost">Cancelar</button></menu>
-    </form>
-  </dialog>
-
-  <script src="facilities-data.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+<header class="topbar"><div class="brand"><img src="logo-region-olancho.png" class="brand-logo" alt="Región Sanitaria de Olancho"><div><h1>SIRRO <small style="font-size:.45em">Central</small></h1><p>Sistema de Referencia–Respuesta Olancho</p></div></div><button id="logoutBtn" class="ghost hidden">Salir</button></header>
+<main class="wrap">
+<section id="loginView" class="card narrow login-card">
+<img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho" style="max-width:130px;display:block;margin:auto">
+<h2>Ingreso a SIRRO Central</h2>
+<p class="hint">Base central segura · Supabase</p>
+<label>Usuario<input id="loginUser" autocomplete="username"></label>
+<label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
+<button id="loginBtn">Ingresar</button><p id="loginMsg" class="hint"></p>
+</section>
+<section id="appView" class="hidden">
+<div class="userbar card"><div><strong id="userName"></strong><br><span id="userMeta"></span></div></div>
+<nav class="tabs card"><button data-tab="inicio" class="active">Inicio</button><button data-tab="nueva">Nueva referencia</button><button data-tab="referencias">Referencias</button><button data-tab="usuarios">Usuarios</button><button data-tab="auditoria">Auditoría</button></nav>
+<section id="tab-inicio" class="tabpane"><div class="grid stats"><article class="card"><span>Establecimientos</span><strong id="statEst">—</strong></article><article class="card"><span>Casos</span><strong id="statCasos">—</strong></article><article class="card"><span>Abiertos</span><strong id="statAbiertos">—</strong></article><article class="card"><span>Cerrados</span><strong id="statCerrados">—</strong></article></div><article class="card"><h2>SIRRO Central</h2><p>Los datos se almacenan en Supabase y están disponibles desde los dispositivos autorizados. La visibilidad depende del perfil asignado.</p></article></section>
+<section id="tab-nueva" class="tabpane hidden"><form id="refForm" class="card formgrid"><h2>Nueva referencia</h2><div class="readonlybox" id="originBox"></div><label>Nombre del paciente<input id="patientName" required></label><label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" required></label><label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label><label>Motivo<select id="refReason"><option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option><option value="EMERGENCIA_URGENCIA">Emergencia / urgencia</option><option value="HOSPITALIZACION">Hospitalización</option><option value="EXAMEN_PROCEDIMIENTO">Examen / procedimiento</option><option value="ATENCION_MATERNA">Atención materna</option><option value="ATENCION_PEDIATRICA">Atención pediátrica</option><option value="OTRO">Otro</option></select></label><label>Destino<select id="destFacility" required></select></label><label>Observación<textarea id="observation"></textarea></label><button type="submit">Registrar referencia</button><p id="refMsg" class="hint"></p></form></section>
+<section id="tab-referencias" class="tabpane hidden"><article class="card"><h2>Referencias</h2><div id="refsList" class="list"></div></article></section>
+<section id="tab-usuarios" class="tabpane hidden"><article class="card"><h2>Usuarios</h2><p>La creación y administración de usuarios se realiza de forma central según los permisos del Administrador Regional.</p><div id="usersList" class="list"></div></article></section>
+<section id="tab-auditoria" class="tabpane hidden"><article class="card"><h2>Auditoría</h2><div id="auditList" class="list"></div></article></section>
+</section></main>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>
