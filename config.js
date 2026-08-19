@@ -3,5 +3,5 @@
 // Complete SUPABASE_ANON_KEY desde Supabase > Project Settings > API.
 window.SIRRO_CONFIG = {
   SUPABASE_URL: "https://nndwrcwahiqlrkbedxqa.supabase.co",
-  SUPABASE_ANON_KEY: "PEGAR_AQUI_LA_ANON_KEY"
+  SUPABASE_ANON_KEY: "sb_publishable_l4icMHnXToufRfc7Tvs1UA_22s7z7QZ"
 };
