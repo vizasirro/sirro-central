@@ -164,7 +164,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], users=[];
 const esc=(v='')=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=x=>x?new Date(x).toLocaleString('es-HN'):'';
-const authEmail=u=>{u=u.trim().toLowerCase();return u==='admin'?'victorzepeda1@gmail.com':u.replace(/[^a-z0-9._+-]/g,'_')+'@users.sirro.net'};
+const authEmail=u=>{u=u.trim().toLowerCase();return u==='admin'?'victorzepeda1@gmail.com':u.includes('@')?u:u.replace(/[^a-z0-9.+-]/g,'')+'@users.sirro.net'};
 function showMsg(sel,text,type=''){const e=$(sel);if(!e)return;e.className='notice '+type;e.textContent=text;e.style.display=text?'block':'none'}
 function fac(id){return establishments.find(x=>x.id===id)}
 function mun(id){return municipios.find(x=>x.id===id)}
