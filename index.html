@@ -369,7 +369,7 @@ function renderMonitoring(){
 }
 function renderEvaluation(){
   if(!isAudit())return;
-  const hospitals=establishments.filter(e=>(String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'))&&tramos.some(t=>t.establecimiento_origen_id===e.id||t.establecimiento_destino_id===e.id));
+  const hospitals=establishments.filter(e=>String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'));
   const total=tramos.length, answered=tramos.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length, closed=tramos.filter(t=>t.estado_actual==='CERRADO').length;
   $('#rrSummary').innerHTML=`<article class="card"><span>Tramos visibles</span><strong>${total}</strong></article><article class="card"><span>Con respuesta</span><strong>${answered}</strong></article><article class="card"><span>Cerrados</span><strong>${closed}</strong></article><article class="card"><span>Nivel R/R</span><strong>${total?Math.round(answered*100/total):0}%</strong></article>`;
   $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
