@@ -28,3 +28,5 @@ Este paquete elimina del flujo principal el uso de `localStorage` para usuarios 
 - Se agrega recuperación de contraseña por correo desde “¿Olvidaste tu contraseña?” y formulario seguro para definir la nueva clave.
 - Se incorpora el botón AYUDA con instrucciones paso a paso específicas para cada rol de SIRRO.
 - Segunda revisión posterior al despliegue: los tramos `EVALUADO` permanecen en Recibidas para permitir responder desde la misma bandeja hospitalaria.
+- Se agregan preferencias individuales de correo: cada usuario puede activar/desactivar el canal y escoger ocho tipos de avisos.
+- La cola de correo excluye datos clínicos; los mensajes contienen solamente el tipo de aviso, código de referencia y enlace seguro a SIRRO.
