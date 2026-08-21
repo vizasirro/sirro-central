@@ -33,6 +33,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 .monitor{display:grid;gap:10px}.monitor details{border:1px solid #d9e2df;border-radius:10px;padding:10px;background:#fff}.monitor summary{cursor:pointer;font-weight:800}
 .user-form-extra{border-top:1px solid #e3ebe8;margin-top:12px;padding-top:10px}
 .install-btn{display:block;width:100%;margin-top:12px}.install-help{margin:8px 0 0}
+.link-btn{background:transparent;color:#0b6b57;padding:8px;text-decoration:underline}.top-actions{display:flex;gap:8px;align-items:center}.help-btn{background:#fff;color:#0b6b57;border:2px solid #fff;border-radius:8px;min-width:72px}.help-panel{max-width:760px;margin:24px auto}.help-panel ol{padding-left:24px}.help-panel li{margin:8px 0}.help-panel h3{color:#0b6b57}.help-close{float:right}
 @media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
 </style>
 </head>
@@ -42,7 +43,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
     <img src="logo-region-olancho.png" class="brand-logo" alt="Región Sanitaria de Olancho">
     <div><h1>SIRRO</h1><p>Sistema de Referencia–Respuesta Olancho</p></div>
   </div>
-  <button id="logoutBtn" class="ghost hidden">Salir</button>
+  <div class="top-actions"><button id="helpBtn" class="help-btn hidden">AYUDA</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
 </header>
 
 <main class="wrap">
@@ -53,9 +54,27 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
   <label>Usuario<input id="loginUser" autocomplete="username"></label>
   <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
   <button id="loginBtn">Ingresar</button>
+  <button id="forgotPasswordBtn" type="button" class="link-btn">¿Olvidaste tu contraseña?</button>
   <button id="installBtn" type="button" class="ghost install-btn">Instalar SIRRO</button>
   <p id="installHelp" class="hint install-help">Instale SIRRO para abrirlo como una aplicación.</p>
   <div id="loginMsg"></div>
+</section>
+
+<section id="forgotPasswordView" class="card narrow login-card hidden">
+  <h2>Recuperar contraseña</h2>
+  <p class="hint">Escriba su usuario o correo. Si la cuenta existe, recibirá un enlace para crear una nueva contraseña.</p>
+  <label>Usuario o correo<input id="recoveryUser" autocomplete="username"></label>
+  <button id="sendRecoveryBtn" type="button">Enviar enlace de recuperación</button>
+  <button id="backToLoginBtn" type="button" class="ghost">Volver al ingreso</button>
+  <div id="recoveryMsg"></div>
+</section>
+
+<section id="updatePasswordView" class="card narrow login-card hidden">
+  <h2>Crear nueva contraseña</h2>
+  <label>Nueva contraseña<input id="recoveryPassword" type="password" minlength="8" autocomplete="new-password"></label>
+  <label>Confirmar contraseña<input id="recoveryPasswordConfirm" type="password" minlength="8" autocomplete="new-password"></label>
+  <button id="updatePasswordBtn" type="button">Guardar nueva contraseña</button>
+  <div id="updatePasswordMsg"></div>
 </section>
 
 <section id="appView" class="hidden">
@@ -65,6 +84,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
     <button data-tab="nueva">Nueva referencia</button>
     <button data-tab="recibidas">Recibidas</button>
     <button data-tab="seguimiento">Seguimiento</button>
+    <button data-tab="notificaciones">Notificaciones <span id="notificationCount"></span></button>
     <button data-tab="monitoreo">Monitoreo</button>
     <button data-tab="evaluacion">Evaluación R/R</button>
     <button data-tab="usuarios">Usuarios</button>
@@ -87,6 +107,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
       <div class="readonlybox full" id="originBox"></div>
       <label>Nombre del paciente<input id="patientName" required></label>
       <label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" pattern="[0-9]{13}" required></label>
+      <label>Teléfono de contacto<input id="patientContact" inputmode="tel" minlength="8" maxlength="15" pattern="[0-9+ -]{8,15}" required></label>
       <label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label>
       <label>Motivo<select id="refReason">
         <option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option>
@@ -102,6 +123,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
         <option value="OTRO">Otro</option>
       </select></label>
       <label id="otherReasonWrap" class="full hidden">Especifique otro motivo<input id="otherReason" maxlength="200"></label>
+      <label>Servicio solicitado<input id="requestedService" maxlength="200" required></label>
+      <label>Diagnóstico o impresión diagnóstica<input id="diagnosis" maxlength="300" required></label>
       <label class="full">Destino<select id="destFacility" required></select></label>
       <label class="full">Observación<textarea id="observation"></textarea></label>
       <button type="submit">Registrar y enviar referencia</button>
@@ -121,6 +144,10 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
     </article>
   </section>
 
+  <section id="tab-notificaciones" class="tabpane hidden">
+    <article class="card"><h2>Notificaciones</h2><div id="notificationsList"></div></article>
+  </section>
+
   <section id="tab-monitoreo" class="tabpane hidden">
     <article class="card"><h2>Monitoreo</h2><p class="muted">Vista según el alcance permitido por el perfil y las políticas de seguridad de la base.</p><div id="monitoring" class="monitor"></div></article>
   </section>
@@ -136,6 +163,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
         <label>Nombre completo<input id="newName" required></label>
         <label>Usuario<input id="newUsername" required autocomplete="off"></label>
         <label>Contraseña<input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
         <label>Identidad<input id="newIdentity" pattern="[0-9]{13}" minlength="13" maxlength="13" required></label>
         <label>Correo personal/institucional<input id="newEmail" type="email" required></label>
         <label>Teléfono<input id="newPhone" pattern="[0-9]{8}" minlength="8" maxlength="8" required></label>
@@ -175,6 +203,13 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
     <article class="card"><h2>Auditoría</h2><div id="auditList"></div></article>
   </section>
 </section>
+
+<section id="helpView" class="card help-panel hidden" aria-live="polite">
+  <button id="closeHelpBtn" class="ghost help-close">Cerrar</button>
+  <h2>AYUDA SIRRO</h2>
+  <p id="helpRole" class="muted"></p>
+  <div id="helpContent"></div>
+</section>
 </main>
 
 <script>
@@ -182,11 +217,17 @@ const SUPABASE_URL="https://nndwrcwahiqlrkbedxqa.supabase.co";
 const SUPABASE_KEY="sb_publishable_l4icMHnXToufRfc7Tvs1UA_22s7z7QZ";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], users=[];
+let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], movements=[], notifications=[], users=[];
 let deferredInstallPrompt=null;
 const esc=(v='')=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=x=>x?new Date(x).toLocaleString('es-HN'):'';
-const authEmail=u=>{u=u.trim().toLowerCase();return u==='admin'?'victorzepeda1@gmail.com':u.includes('@')?u:u.replace(/[^a-z0-9.+-]/g,'')+'@users.sirro.net'};
+async function authEmail(u){
+  u=u.trim().toLowerCase();
+  if(u.includes('@'))return u;
+  const {data,error}=await sb.rpc('sirro_resolver_login_email',{p_username:u});
+  if(error||!data)throw new Error('No se pudo resolver el nombre de usuario.');
+  return data;
+}
 function showMsg(sel,text,type=''){const e=$(sel);if(!e)return;e.className='notice '+type;e.textContent=text;e.style.display=text?'block':'none'}
 function fac(id){return establishments.find(x=>x.id===id)}
 function mun(id){return municipios.find(x=>x.id===id)}
@@ -198,6 +239,37 @@ function isGuest(){return profile?.rol==='AUDITOR_CONSULTA'}
 const roleLabels={ADMIN_REGIONAL:'Administrador Regional',ECOR:'ECOR',JEFE_MUNICIPAL:'Jefe Municipal',USUARIO_US:'Usuario de Establecimiento',USUARIO_HOSPITAL:'Usuario de Hospital',AUDITOR_CONSULTA:'Auditor / Consulta'};
 const roleLabel=r=>roleLabels[r]||r||'';
 const scopeLabels={ESTABLECIMIENTO:'Establecimiento',MUNICIPIO:'Municipio',ECOR:'ECOR',DEPARTAMENTO:'Todo Olancho'};
+const helpGuides={
+  ADMIN_REGIONAL:{title:'Administrador Regional',sections:[
+    ['Ingresar y revisar el estado general',['Ingrese con su usuario y contraseña.','Revise Inicio para conocer establecimientos, casos abiertos y cerrados.','Abra Monitoreo y Evaluación R/R para revisar el desempeño regional.']],
+    ['Crear un usuario',['Abra Usuarios.','Complete nombre, usuario, contraseña y confirmación, identidad, correo, teléfono y cargo.','Seleccione el rol y su ECOR, municipio o establecimiento cuando corresponda.','Para Invitado/Auditor, defina el alcance y si tendrá Centro Regional de Monitoría.','Pulse Crear usuario y confirme que aparece en la lista.']],
+    ['Gestionar accesos',['En Usuarios, localice la persona.','Use Activar, Ausencia, Suspender o Inactivar.','Escriba siempre el motivo; el cambio quedará en auditoría.','Para Invitado/Auditor, use Configurar acceso para cambiar alcance o Centro de Monitoría.']],
+    ['Auditar',['Abra Auditoría.','Revise acción, usuario, establecimiento, cambio de estado, motivo y fecha/hora.','No borre datos para ocultar errores; repórtelos y corríjalos con trazabilidad.']]
+  ]},
+  ECOR:{title:'Usuario ECOR',sections:[
+    ['Monitorear su ECOR',['Ingrese y abra Monitoreo.','Despliegue su ECOR para revisar tramos abiertos y respondidos.','Use Seguimiento para buscar por código o paciente y filtrar por estado.']],
+    ['Gestionar una incidencia',['Identifique el establecimiento y el estado del tramo.','Coordine con el Jefe Municipal o la unidad responsable.','Si necesita crear usuarios o cambiar una asignación, solicítelo al Administrador Regional según los permisos vigentes.']]
+  ]},
+  JEFE_MUNICIPAL:{title:'Jefe Municipal',sections:[
+    ['Revisar referencias del municipio',['Abra Seguimiento.','Busque el código de referencia o el nombre del paciente.','Revise el estado y la unidad responsable.']],
+    ['Intervenir por ausencia',['Confirme que el responsable está en Ausencia temporal, Suspendido o Inactivo.','Documente el motivo de la intervención.','Realice únicamente la acción permitida para asegurar continuidad y verifique el nuevo estado.']]
+  ]},
+  USUARIO_US:{title:'Usuario de Establecimiento',sections:[
+    ['Crear una referencia',['Abra Nueva referencia.','Compruebe que el origen mostrado sea su unidad.','Complete nombre, identidad, contacto, tipo, motivo, servicio, diagnóstico, destino y observación.','Revise los datos y pulse Registrar y enviar referencia.','Anote el código SIRRO mostrado.']],
+    ['Dar seguimiento y cerrar',['Abra Seguimiento y busque el código o paciente.','Cuando aparezca Respuesta enviada, lea y confirme que corresponde al caso.','Pulse Confirmar respuesta y cerrar únicamente después de verificarla.']],
+    ['Corregir un rechazo',['Localice el tramo Rechazado en Seguimiento.','Pulse Corregir y reenviar.','Seleccione destino, corrija servicio, diagnóstico u observación y escriba el motivo.','Verifique que el nuevo tramo quede enviado.']]
+  ]},
+  USUARIO_HOSPITAL:{title:'Usuario de Hospital',sections:[
+    ['Recibir una referencia',['Abra Recibidas.','Revise paciente, origen, destino y código.','Seleccione Recibir ambulatorio o Recibir hospitalizado según corresponda.','Si debe rechazarla, pulse Rechazar y escriba el motivo obligatorio.']],
+    ['Evaluar y responder',['Para atención ambulatoria, pulse Marcar evaluada y registre la observación.','Pulse Enviar respuesta y escriba la respuesta o contrarreferencia.','Si proviene de una cadena secundaria, elija respuesta directa al originador o respuesta por la cadena.']],
+    ['Hacer referencia secundaria',['Abra la referencia recibida en atención.','Pulse Referencia secundaria.','Seleccione únicamente un destino autorizado.','Escriba la justificación clínica y confirme el nuevo estado en Seguimiento.']]
+  ]},
+  AUDITOR_CONSULTA:{title:'Invitado / Auditor de consulta',sections:[
+    ['Consultar información',['Ingrese y revise Inicio dentro del alcance autorizado: establecimiento, municipio, ECOR o departamento.','Use Seguimiento para buscar y filtrar referencias visibles.','Abra Evaluación R/R para revisar resultados hospitalarios.']],
+    ['Usar el Centro de Monitoría',['Abra Monitoreo solo si el Administrador Regional habilitó este permiso.','Revise pendientes y respuestas sin modificar datos.','Reporte inconsistencias al responsable; este perfil es únicamente de consulta.']],
+    ['Revisar auditoría',['Abra Auditoría.','Consulte quién realizó cada acción, cuándo, dónde y con qué motivo.','No intente crear, cambiar o cerrar referencias.']]
+  ]}
+};
 
 const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 function updateInstallButton(){
@@ -229,7 +301,9 @@ async function login(){
   showMsg('#loginMsg','Ingresando…');
   const u=$('#loginUser').value.trim(), p=$('#loginPass').value;
   if(!u||!p)return showMsg('#loginMsg','Escriba usuario y contraseña.','error');
-  const {data,error}=await sb.auth.signInWithPassword({email:authEmail(u),password:p});
+  let email;
+  try{email=await authEmail(u)}catch{return showMsg('#loginMsg','No se pudo validar el usuario. Intente nuevamente.','error')}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:p});
   if(error)return showMsg('#loginMsg','Usuario o contraseña incorrectos.','error');
   await enter(data.user);
 }
@@ -239,11 +313,45 @@ async function enter(user){
   if(error||!data){await sb.auth.signOut();return showMsg('#loginMsg','El usuario no tiene perfil SIRRO.','error')}
   profile=data;
   if(profile.estado!=='ACTIVO'){await sb.auth.signOut();return showMsg('#loginMsg','Usuario no activo: '+profile.estado,'error')}
-  $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden'); $('#logoutBtn').classList.remove('hidden');
+  $('#loginView').classList.add('hidden'); $('#forgotPasswordView').classList.add('hidden'); $('#updatePasswordView').classList.add('hidden'); $('#appView').classList.remove('hidden'); $('#logoutBtn').classList.remove('hidden'); $('#helpBtn').classList.remove('hidden');
   $('#userName').textContent=profile.nombre_completo;
   $('#userMeta').textContent=[roleLabel(profile.rol),profile.cargo_funcion].filter(Boolean).join(' · ');
   await loadCatalogs(); configureTabs(); await refreshAll();
 }
+function showForgotPassword(){
+  $('#loginView').classList.add('hidden'); $('#forgotPasswordView').classList.remove('hidden'); $('#recoveryUser').value=$('#loginUser').value.trim(); showMsg('#recoveryMsg','');
+}
+function showLogin(){
+  $('#forgotPasswordView').classList.add('hidden'); $('#updatePasswordView').classList.add('hidden'); $('#loginView').classList.remove('hidden');
+}
+async function sendRecovery(){
+  const user=$('#recoveryUser').value.trim(); if(!user)return showMsg('#recoveryMsg','Escriba su usuario o correo.','error');
+  showMsg('#recoveryMsg','Procesando solicitud…');
+  try{
+    const email=await authEmail(user);
+    await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  }catch{}
+  showMsg('#recoveryMsg','Si la cuenta existe y tiene correo habilitado, recibirá un enlace de recuperación. Revise también correo no deseado.','ok');
+}
+function showPasswordRecovery(){
+  $('#loginView').classList.add('hidden'); $('#forgotPasswordView').classList.add('hidden'); $('#appView').classList.add('hidden'); $('#helpView').classList.add('hidden'); $('#updatePasswordView').classList.remove('hidden');
+}
+async function updateRecoveredPassword(){
+  const p=$('#recoveryPassword').value, c=$('#recoveryPasswordConfirm').value;
+  if(p.length<8)return showMsg('#updatePasswordMsg','La contraseña debe tener al menos 8 caracteres.','error');
+  if(p!==c)return showMsg('#updatePasswordMsg','Las contraseñas no coinciden.','error');
+  const {error}=await sb.auth.updateUser({password:p});
+  if(error)return showMsg('#updatePasswordMsg','No se pudo actualizar la contraseña. Solicite un nuevo enlace.','error');
+  showMsg('#updatePasswordMsg','Contraseña actualizada correctamente. Ya puede ingresar.','ok');
+  await sb.auth.signOut(); setTimeout(showLogin,1200);
+}
+function showHelp(){
+  const guide=helpGuides[profile?.rol]||helpGuides.AUDITOR_CONSULTA;
+  $('#appView').classList.add('hidden'); $('#helpView').classList.remove('hidden'); $('#helpRole').textContent='Guía para: '+guide.title;
+  $('#helpContent').innerHTML=guide.sections.map(([title,steps])=>`<section><h3>${esc(title)}</h3><ol>${steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></section>`).join('');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeHelp(){ $('#helpView').classList.add('hidden'); $('#appView').classList.remove('hidden'); }
 async function loadCatalogs(){
   let r=await sb.from('establecimientos').select('*').eq('activo',true).order('nombre'); establishments=r.data||[];
   r=await sb.from('municipios').select('*').eq('activo',true).order('nombre'); municipios=r.data||[];
@@ -271,17 +379,27 @@ function fillDestinations(){
   if(!uniq.length) sel.innerHTML='<option value="">No hay ruta autorizada para este tipo</option>';
 }
 async function refreshAll(){
-  await Promise.all([loadCases(),loadTramos(),loadUsers(),loadAudit()]);
-  renderStats(); renderReceived(); renderTracking(); renderMonitoring(); renderEvaluation(); renderUsers();
+  await Promise.all([loadCases(),loadTramos(),loadMovements(),loadNotifications(),loadUsers(),loadAudit()]);
+  renderStats(); renderReceived(); renderTracking(); renderMonitoring(); renderEvaluation(); renderNotifications(); renderUsers();
+}
+async function fetchAll(table,order='creado_en'){
+  const pageSize=1000, rows=[];
+  for(let from=0;;from+=pageSize){
+    const {data,error}=await sb.from(table).select('*').order(order,{ascending:false}).range(from,from+pageSize-1);
+    if(error)throw error;
+    rows.push(...(data||[]));
+    if(!data||data.length<pageSize)break;
+  }
+  return rows;
 }
 async function loadCases(){
-  const {data,error}=await sb.from('casos_referencia').select('*').order('creado_en',{ascending:false}).limit(500);
-  cases=error?[]:(data||[]);
+  try{cases=await fetchAll('casos_referencia')}catch{cases=[]}
 }
 async function loadTramos(){
-  const {data,error}=await sb.from('tramos_referencia').select('*').order('creado_en',{ascending:false}).limit(1000);
-  tramos=error?[]:(data||[]);
+  try{tramos=await fetchAll('tramos_referencia')}catch{tramos=[]}
 }
+async function loadMovements(){try{movements=await fetchAll('movimientos_referencia')}catch{movements=[]}}
+async function loadNotifications(){try{notifications=await fetchAll('notificaciones','creada_en')}catch{notifications=[]}}
 async function loadUsers(){
   if(!isAdmin())return users=[];
   const {data}=await sb.from('perfiles').select('*').order('nombre_completo'); users=data||[];
@@ -332,14 +450,20 @@ function tramoItem(t,withActions=true){
   const c=caseOf(t.caso_id), o=fac(t.establecimiento_origen_id), d=fac(t.establecimiento_destino_id);
   const buttons=[];
   if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && t.estado_actual==='ENVIADO'){
-    buttons.push(`<button onclick="receiveTramo('${t.id}','AMBULATORIO')">Recibir ambulatorio</button>`,`<button onclick="receiveTramo('${t.id}','HOSPITALIZADO')">Recibir hospitalizado</button>`);
+    buttons.push(`<button onclick="receiveTramo('${t.id}','AMBULATORIO')">Recibir ambulatorio</button>`,`<button onclick="receiveTramo('${t.id}','HOSPITALIZADO')">Recibir hospitalizado</button>`,`<button class="danger" onclick="rejectTramo('${t.id}')">Rechazar</button>`);
   }
-  if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && ['EN_ATENCION','HOSPITALIZADO'].includes(t.estado_actual)){
+  if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && t.estado_actual==='EN_ATENCION'){
+    buttons.push(`<button onclick="evaluateTramo('${t.id}')">Marcar evaluada</button>`);
+  }
+  if(withActions && profile.establecimiento_id===t.establecimiento_destino_id && ['EVALUADO','HOSPITALIZADO'].includes(t.estado_actual)){
     buttons.push(`<button onclick="answerTramo('${t.id}')">Enviar respuesta</button>`);
     if(profile.rol==='USUARIO_HOSPITAL')buttons.push(`<button class="ghost" onclick="secondaryTramo('${t.id}')">Referencia secundaria</button>`);
   }
   if(withActions && profile.establecimiento_id===t.establecimiento_origen_id && t.estado_actual==='RESPUESTA_ENVIADA'){
     buttons.push(`<button onclick="closeTramo('${t.id}')">Confirmar respuesta y cerrar</button>`);
+  }
+  if(withActions && profile.establecimiento_id===t.establecimiento_origen_id && t.estado_actual==='RECHAZADO'){
+    buttons.push(`<button onclick="reorientTramo('${t.id}')">Corregir y reenviar</button>`);
   }
   return `<div class="item"><div class="row"><div><strong>${esc(c?.codigo_visible||'')}</strong> · ${esc(c?.paciente_nombre||'')}<br><small>${esc(o?.nombre||'')} → ${esc(d?.nombre||'')} · Tramo ${t.numero_tramo} · ${fmt(t.creado_en)}</small></div><span class="badge">${esc(t.estado_actual)}</span></div>${buttons.length?`<div class="actions">${buttons.join('')}</div>`:''}</div>`;
 }
@@ -370,9 +494,16 @@ function renderMonitoring(){
 function renderEvaluation(){
   if(!isAudit())return;
   const hospitals=establishments.filter(e=>String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'));
-  const total=tramos.length, answered=tramos.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length, closed=tramos.filter(t=>t.estado_actual==='CERRADO').length;
+  const hasMovement=(t,types)=>movements.some(m=>m.tramo_id===t.id&&types.includes(m.tipo));
+  const answeredRows=tramos.filter(t=>hasMovement(t,['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','TRAMO_CERRADO']));
+  const total=tramos.length, answered=answeredRows.length, closed=tramos.filter(t=>t.estado_actual==='CERRADO').length;
   $('#rrSummary').innerHTML=`<article class="card"><span>Tramos visibles</span><strong>${total}</strong></article><article class="card"><span>Con respuesta</span><strong>${answered}</strong></article><article class="card"><span>Cerrados</span><strong>${closed}</strong></article><article class="card"><span>Nivel R/R</span><strong>${total?Math.round(answered*100/total):0}%</strong></article>`;
-  $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
+  $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>hasMovement(t,['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','TRAMO_CERRADO'])).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
+}
+function renderNotifications(){
+  const unread=notifications.filter(n=>!n.leida).length;
+  $('#notificationCount').textContent=unread?`(${unread})`:'';
+  $('#notificationsList').innerHTML=notifications.map(n=>`<div class="item"><strong>${esc(n.titulo)}</strong>${n.critica?' · CRÍTICA':''}<br><span>${esc(n.mensaje)}</span><br><small>${fmt(n.creada_en)} · ${n.leida?'Leída':`<button class="ghost" onclick="markNotificationRead('${n.id}')">Marcar leída</button>`}</small></div>`).join('')||'<p class="muted">Sin notificaciones.</p>';
 }
 function toggleOtherReason(){
   const isOther=$('#refReason').value==='OTRO';
@@ -387,8 +518,19 @@ async function createRef(e){
   if(reason==='OTRO'&&!otherReason)return showMsg('#refMsg','Especifique el otro motivo.','error');
   const observation=$('#observation').value.trim();
   const detail=reason==='OTRO'?('Otro motivo: '+otherReason+(observation?'\nObservación: '+observation:'')):observation;
-  const payload={p_destino:$('#destFacility').value,p_paciente_identidad:$('#patientId').value.trim(),p_paciente_nombre:$('#patientName').value.trim(),p_tipo:$('#refType').value,p_motivo:reason,p_observacion:detail||null};
-  const {data,error}=await sb.rpc('crear_referencia',payload);
+  const payload={
+    p_destino:$('#destFacility').value,
+    p_paciente_identidad:$('#patientId').value.trim(),
+    p_paciente_nombre:$('#patientName').value.trim(),
+    p_paciente_contacto:$('#patientContact').value.trim(),
+    p_tipo:$('#refType').value,
+    p_motivo:reason,
+    p_servicio:$('#requestedService').value.trim(),
+    p_diagnostico:$('#diagnosis').value.trim(),
+    p_observacion:detail||null,
+    p_destino_externo_nombre:null
+  };
+  const {data,error}=await sb.rpc('crear_referencia_v3',payload);
   if(error)return showMsg('#refMsg',error.message,'error');
   const row=Array.isArray(data)?data[0]:data;
   if(row?.tramo_id){const sent=await sb.rpc('enviar_tramo',{p_tramo:row.tramo_id});if(sent.error)return showMsg('#refMsg','Referencia creada, pero no se pudo enviar: '+sent.error.message,'error')}
@@ -398,9 +540,19 @@ async function createRef(e){
 async function receiveTramo(id,modalidad){
   const {error}=await sb.rpc('recibir_tramo',{p_tramo:id,p_modalidad:modalidad}); if(error)return alert(error.message); await refreshAll();
 }
+async function evaluateTramo(id){
+  const detail=prompt('Observación de la evaluación (opcional):'); if(detail===null)return;
+  const {error}=await sb.rpc('sirro_marcar_evaluado',{p_tramo:id,p_detalle:detail.trim()||null}); if(error)return alert(error.message); await refreshAll();
+}
+async function rejectTramo(id){
+  const reason=prompt('Motivo obligatorio del rechazo:'); if(!reason?.trim())return;
+  const {error}=await sb.rpc('sirro_rechazar_tramo',{p_tramo:id,p_motivo:reason.trim()}); if(error)return alert(error.message); await refreshAll();
+}
 async function answerTramo(id){
   const detail=prompt('Escriba la respuesta / contrarreferencia:'); if(!detail?.trim())return;
-  const {error}=await sb.rpc('sirro_enviar_respuesta',{p_tramo:id,p_detalle:detail.trim()}); if(error)return alert(error.message); await refreshAll();
+  const t=tramos.find(x=>x.id===id);
+  const mode=t?.parent_tramo_id&&confirm('¿Enviar la respuesta directamente al establecimiento que originó el caso?\nAceptar: respuesta directa.\nCancelar: respuesta por la cadena de referencia.')?'DIRECTO_ORIGINADOR':'ORIGEN_TRAMO';
+  const {error}=await sb.rpc('sirro_enviar_respuesta_v2',{p_tramo:id,p_detalle:detail.trim(),p_modo:mode}); if(error)return alert(error.message); await refreshAll();
 }
 async function secondaryTramo(id){
   const rr=routes.filter(r=>r.establecimiento_origen_id===profile.establecimiento_id);
@@ -410,6 +562,21 @@ async function secondaryTramo(id){
   const n=Number(prompt('Seleccione destino:\n'+text)); if(!n||!list[n-1])return;
   const detail=prompt('Justificación de la referencia secundaria:'); if(!detail?.trim())return;
   const {error}=await sb.rpc('sirro_referencia_secundaria',{p_tramo:id,p_destino:list[n-1].id,p_detalle:detail.trim()}); if(error)return alert(error.message); await refreshAll();
+}
+async function reorientTramo(id){
+  const t=tramos.find(x=>x.id===id), c=caseOf(t?.caso_id); if(!t||!c)return;
+  const rr=routes.filter(r=>r.establecimiento_origen_id===profile.establecimiento_id);
+  const list=[...new Map(rr.map(r=>[r.establecimiento_destino_id,fac(r.establecimiento_destino_id)]).filter(x=>x[1])).values()];
+  const n=Number(prompt('Seleccione nuevo destino:\n'+list.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n'))); if(!n||!list[n-1])return;
+  const service=prompt('Servicio solicitado:',c.servicio_requerido||''); if(service===null)return;
+  const diagnosis=prompt('Diagnóstico o impresión diagnóstica:',c.diagnostico_detalle||''); if(diagnosis===null)return;
+  const observation=prompt('Observación:',c.observacion||''); if(observation===null)return;
+  const reason=prompt('Motivo de la corrección y reenvío:'); if(!reason?.trim())return;
+  const {error}=await sb.rpc('sirro_reorientar_referencia_rechazada',{p_tramo_rechazado:id,p_destino:list[n-1].id,p_motivo:reason.trim(),p_destino_externo_nombre:null,p_paciente_identidad:c.paciente_identidad,p_paciente_nombre:c.paciente_nombre,p_paciente_contacto:c.paciente_contacto,p_servicio:service.trim(),p_diagnostico:diagnosis.trim(),p_observacion:observation.trim()||null});
+  if(error)return alert(error.message); await refreshAll();
+}
+async function markNotificationRead(id){
+  const {error}=await sb.rpc('sirro_marcar_notificacion_leida',{p_notificacion:id}); if(error)return alert(error.message); await loadNotifications(); renderNotifications();
 }
 async function closeTramo(id){
   if(!confirm('¿Confirmar que recibió la respuesta y cerrar este tramo?'))return;
@@ -431,6 +598,7 @@ function userRoleUI(){
 }
 async function createUser(e){
   e.preventDefault(); showMsg('#userMsg','Creando usuario…');
+  if($('#newPassword').value!==$('#confirmPassword').value)return showMsg('#userMsg','Las contraseñas no coinciden.','error');
   const body={username:$('#newUsername').value.trim(),password:$('#newPassword').value,profile:{
     nombre_completo:$('#newName').value.trim(),identidad:$('#newIdentity').value.trim(),correo:$('#newEmail').value.trim(),
     telefono:$('#newPhone').value.trim(),cargo_funcion:$('#newJob').value.trim(),rol:$('#newRole').value,
@@ -526,13 +694,17 @@ async function resetAllTestData(){
 
 $$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.tabpane').forEach(x=>x.classList.add('hidden'));$('#tab-'+b.dataset.tab).classList.remove('hidden')});
 $('#loginBtn').onclick=login; $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('#forgotPasswordBtn').onclick=showForgotPassword; $('#backToLoginBtn').onclick=showLogin; $('#sendRecoveryBtn').onclick=sendRecovery; $('#updatePasswordBtn').onclick=updateRecoveredPassword;
 $('#installBtn').onclick=installSirro; updateInstallButton();
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('#helpBtn').onclick=showHelp; $('#closeHelpBtn').onclick=closeHelp;
 $('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations); $('#refReason').addEventListener('change',toggleOtherReason); toggleOtherReason();
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
 $('#newScope').addEventListener('change',userRoleUI);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
+
+sb.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')showPasswordRecovery()});
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
