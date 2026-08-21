@@ -469,7 +469,7 @@ function tramoItem(t,withActions=true){
 }
 function renderReceived(){
   if(!roleClinical())return;
-  const rows=tramos.filter(t=>t.establecimiento_destino_id===profile.establecimiento_id && ['ENVIADO','EN_ATENCION','HOSPITALIZADO'].includes(t.estado_actual));
+  const rows=tramos.filter(t=>t.establecimiento_destino_id===profile.establecimiento_id && ['ENVIADO','EN_ATENCION','EVALUADO','HOSPITALIZADO'].includes(t.estado_actual));
   $('#receivedList').innerHTML=rows.map(t=>tramoItem(t,true)).join('')||'<p class="muted">No hay referencias pendientes.</p>';
 }
 function renderTracking(){
