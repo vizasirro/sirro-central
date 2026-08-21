@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
   let sent = 0;
   for (const job of jobs ?? []) {
     const code = job.codigo_referencia ? `<p><strong>Código de referencia:</strong> ${String(job.codigo_referencia).replace(/[<>&]/g, "")}</p>` : "";
-    const html = `<div style="font-family:Arial,sans-serif;color:#17312b"><h2>${job.asunto}</h2>${code}<p>Tiene un aviso administrativo pendiente en SIRRO.</p><p><a href="${appUrl}" style="background:#0b6b57;color:white;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir SIRRO</a></p><p style="color:#607a74;font-size:12px">Por seguridad, este correo no contiene nombres, identidad, diagnóstico ni información clínica.</p></div>`;
+    const html = `<div style="font-family:Arial,sans-serif;color:#17312b"><h2>${job.asunto}</h2>${code}<p>Tiene un aviso administrativo pendiente en SIRRO.</p><p><a href="${appUrl}" style="background:#0b6b57;color:white;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir SIRRO</a></p><p style="color:#607a74;font-size:12px">Por seguridad, este correo no contiene nombres, identidad, diagnóstico ni información clínica.</p><p style="color:#607a74;font-size:12px"><strong>Este es un mensaje automático. No contestar este correo.</strong></p></div>`;
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
