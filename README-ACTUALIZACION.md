@@ -30,3 +30,4 @@ Este paquete elimina del flujo principal el uso de `localStorage` para usuarios 
 - Segunda revisión posterior al despliegue: los tramos `EVALUADO` permanecen en Recibidas para permitir responder desde la misma bandeja hospitalaria.
 - Se agregan preferencias individuales de correo: cada usuario puede activar/desactivar el canal y escoger ocho tipos de avisos.
 - La cola de correo excluye datos clínicos; los mensajes contienen solamente el tipo de aviso, código de referencia y enlace seguro a SIRRO.
+- Cada mensaje indica claramente: “Este es un mensaje automático. No contestar este correo.”
