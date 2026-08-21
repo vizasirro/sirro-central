@@ -94,9 +94,14 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
         <option value="HOSPITALIZACION">Hospitalización</option>
         <option value="EXAMEN_PROCEDIMIENTO">Examen / procedimiento</option>
         <option value="ATENCION_MATERNA">Atención materna</option>
-        <option value="ATENCION_PEDIATRICA">Atención pediátrica</option>
+        <option value="CE_PEDIATRIA">C.E. Pediatría</option>
+        <option value="CE_GINECOOBSTETRICIA">C.E. GinecoObstetricia</option>
+        <option value="CE_MEDICINA_INTERNA">C.E. Medicina Interna</option>
+        <option value="CE_CIRUGIA">C.E. Cirugía</option>
+        <option value="CE_ORTOPEDIA">C.E. Ortopedia</option>
         <option value="OTRO">Otro</option>
       </select></label>
+      <label id="otherReasonWrap" class="full hidden">Especifique otro motivo<input id="otherReason" maxlength="200"></label>
       <label class="full">Destino<select id="destFacility" required></select></label>
       <label class="full">Observación<textarea id="observation"></textarea></label>
       <button type="submit">Registrar y enviar referencia</button>
@@ -330,9 +335,20 @@ function renderEvaluation(){
   $('#rrSummary').innerHTML=`<article class="card"><span>Tramos visibles</span><strong>${total}</strong></article><article class="card"><span>Con respuesta</span><strong>${answered}</strong></article><article class="card"><span>Cerrados</span><strong>${closed}</strong></article><article class="card"><span>Nivel R/R</span><strong>${total?Math.round(answered*100/total):0}%</strong></article>`;
   $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
 }
+function toggleOtherReason(){
+  const isOther=$('#refReason').value==='OTRO';
+  $('#otherReasonWrap').classList.toggle('hidden',!isOther);
+  $('#otherReason').required=isOther;
+  if(!isOther)$('#otherReason').value='';
+}
 async function createRef(e){
   e.preventDefault(); showMsg('#refMsg','Registrando y enviando…');
-  const payload={p_destino:$('#destFacility').value,p_paciente_identidad:$('#patientId').value.trim(),p_paciente_nombre:$('#patientName').value.trim(),p_tipo:$('#refType').value,p_motivo:$('#refReason').value,p_observacion:$('#observation').value.trim()||null};
+  const reason=$('#refReason').value;
+  const otherReason=$('#otherReason').value.trim();
+  if(reason==='OTRO'&&!otherReason)return showMsg('#refMsg','Especifique el otro motivo.','error');
+  const observation=$('#observation').value.trim();
+  const detail=reason==='OTRO'?('Otro motivo: '+otherReason+(observation?'\nObservación: '+observation:'')):observation;
+  const payload={p_destino:$('#destFacility').value,p_paciente_identidad:$('#patientId').value.trim(),p_paciente_nombre:$('#patientName').value.trim(),p_tipo:$('#refType').value,p_motivo:reason,p_observacion:detail||null};
   const {data,error}=await sb.rpc('crear_referencia',payload);
   if(error)return showMsg('#refMsg',error.message,'error');
   const row=Array.isArray(data)?data[0]:data;
@@ -429,7 +445,7 @@ $$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.cla
 $('#loginBtn').onclick=login; $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 $('#installBtn').onclick=installSirro; updateInstallButton();
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
-$('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations);
+$('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations); $('#refReason').addEventListener('change',toggleOtherReason); toggleOtherReason();
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
