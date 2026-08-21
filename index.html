@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b6b57">
-<title>SIRRO </title>
+<title>SIRRO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17312b;background:#f4f7f6}
@@ -42,7 +42,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 <main class="wrap">
 <section id="loginView" class="card narrow login-card">
   <img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho">
-  <h2>Ingreso a SIRRO </h2>
+  <h2>Ingreso a SIRRO</h2>
   <p class="hint">Base central segura · Supabase</p>
   <label>Usuario<input id="loginUser" autocomplete="username"></label>
   <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
@@ -128,8 +128,9 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
         <label>Teléfono<input id="newPhone" pattern="[0-9]{8}" minlength="8" maxlength="8" required></label>
         <label>Cargo / función<input id="newJob" required></label>
         <label>Rol<select id="newRole" required>
-          <option value="">Seleccione</option><option>ADMIN_REGIONAL</option><option>ECOR</option><option>JEFE_MUNICIPAL</option>
-          <option>USUARIO_US</option><option>USUARIO_HOSPITAL</option><option>AUDITOR_CONSULTA</option>
+          <option value="">Seleccione</option>
+          <option value="ADMIN_REGIONAL">Administrador Regional</option><option value="ECOR">ECOR</option><option value="JEFE_MUNICIPAL">Jefe Municipal</option>
+          <option value="USUARIO_US">Usuario de Establecimiento</option><option value="USUARIO_HOSPITAL">Usuario de Hospital</option><option value="AUDITOR_CONSULTA">Auditor / Consulta</option>
         </select></label>
         <label id="newEcorWrap" class="hidden">ECOR<select id="newEcor"></select></label>
         <label id="newMunicipioWrap" class="hidden">Municipio<select id="newMunicipio"></select></label>
@@ -172,6 +173,8 @@ function ecor(id){return ecors.find(x=>x.id===id)}
 function roleClinical(){return ['USUARIO_US','USUARIO_HOSPITAL'].includes(profile?.rol)}
 function isAdmin(){return profile?.rol==='ADMIN_REGIONAL'}
 function isAudit(){return ['ADMIN_REGIONAL','AUDITOR_CONSULTA'].includes(profile?.rol)}
+const roleLabels={ADMIN_REGIONAL:'Administrador Regional',ECOR:'ECOR',JEFE_MUNICIPAL:'Jefe Municipal',USUARIO_US:'Usuario de Establecimiento',USUARIO_HOSPITAL:'Usuario de Hospital',AUDITOR_CONSULTA:'Auditor / Consulta'};
+const roleLabel=r=>roleLabels[r]||r||'';
 
 async function login(){
   showMsg('#loginMsg','Ingresando…');
@@ -189,7 +192,7 @@ async function enter(user){
   if(profile.estado!=='ACTIVO'){await sb.auth.signOut();return showMsg('#loginMsg','Usuario no activo: '+profile.estado,'error')}
   $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden'); $('#logoutBtn').classList.remove('hidden');
   $('#userName').textContent=profile.nombre_completo;
-  $('#userMeta').textContent=[profile.rol,profile.cargo_funcion].filter(Boolean).join(' · ');
+  $('#userMeta').textContent=[roleLabel(profile.rol),profile.cargo_funcion].filter(Boolean).join(' · ');
   await loadCatalogs(); configureTabs(); await refreshAll();
 }
 async function loadCatalogs(){
@@ -350,7 +353,7 @@ async function createUser(e){
 }
 function renderUsers(){
   if(!isAdmin())return;
-  $('#usersList').innerHTML=users.map(u=>`<div class="item"><div class="row"><div><strong>${esc(u.nombre_completo)}</strong><br><small>${esc(u.rol)} · ${esc(u.correo)} · ${esc(u.telefono)}</small></div><span class="badge">${esc(u.estado)}</span></div><div class="actions">${u.id!==profile.id?`<button class="ghost" onclick="setUserState('${u.id}','ACTIVO')">Activar</button><button class="ghost" onclick="setUserState('${u.id}','AUSENCIA_TEMPORAL')">Ausencia</button><button class="ghost" onclick="setUserState('${u.id}','SUSPENDIDO')">Suspender</button><button class="ghost" onclick="setUserState('${u.id}','INACTIVO')">Inactivar</button>`:''}</div></div>`).join('')||'<p class="muted">Sin usuarios.</p>';
+  $('#usersList').innerHTML=users.map(u=>`<div class="item"><div class="row"><div><strong>${esc(u.nombre_completo)}</strong><br><small>${esc(roleLabel(u.rol))} · ${esc(u.correo)} · ${esc(u.telefono)}</small></div><span class="badge">${esc(u.estado)}</span></div><div class="actions">${u.id!==profile.id?`<button class="ghost" onclick="setUserState('${u.id}','ACTIVO')">Activar</button><button class="ghost" onclick="setUserState('${u.id}','AUSENCIA_TEMPORAL')">Ausencia</button><button class="ghost" onclick="setUserState('${u.id}','SUSPENDIDO')">Suspender</button><button class="ghost" onclick="setUserState('${u.id}','INACTIVO')">Inactivar</button>`:''}</div></div>`).join('')||'<p class="muted">Sin usuarios.</p>';
 }
 async function setUserState(id,state){
   const reason=prompt('Motivo del cambio de estado:'); if(!reason?.trim())return;
