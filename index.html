@@ -148,6 +148,13 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
         <label id="newEcorWrap" class="hidden">ECOR<select id="newEcor"></select></label>
         <label id="newMunicipioWrap" class="hidden">Municipio<select id="newMunicipio"></select></label>
         <label id="newEstWrap" class="hidden">Establecimiento<select id="newEst"></select></label>
+        <label id="newScopeWrap" class="hidden">Alcance de consulta<select id="newScope">
+          <option value="ESTABLECIMIENTO">Una unidad de salud o establecimiento</option>
+          <option value="MUNICIPIO">Un municipio</option>
+          <option value="ECOR">Un ECOR</option>
+          <option value="DEPARTAMENTO">Todo el departamento de Olancho</option>
+        </select></label>
+        <label id="newMonitorWrap" class="hidden">Centro Regional de Monitoría<select id="newMonitorPermission"><option value="false">No habilitado</option><option value="true">Habilitado</option></select></label>
         <button type="submit">Crear usuario</button>
         <div id="userMsg" class="full"></div>
       </form>
@@ -187,8 +194,10 @@ function ecor(id){return ecors.find(x=>x.id===id)}
 function roleClinical(){return ['USUARIO_US','USUARIO_HOSPITAL'].includes(profile?.rol)}
 function isAdmin(){return profile?.rol==='ADMIN_REGIONAL'}
 function isAudit(){return ['ADMIN_REGIONAL','AUDITOR_CONSULTA'].includes(profile?.rol)}
+function isGuest(){return profile?.rol==='AUDITOR_CONSULTA'}
 const roleLabels={ADMIN_REGIONAL:'Administrador Regional',ECOR:'ECOR',JEFE_MUNICIPAL:'Jefe Municipal',USUARIO_US:'Usuario de Establecimiento',USUARIO_HOSPITAL:'Usuario de Hospital',AUDITOR_CONSULTA:'Auditor / Consulta'};
 const roleLabel=r=>roleLabels[r]||r||'';
+const scopeLabels={ESTABLECIMIENTO:'Establecimiento',MUNICIPIO:'Municipio',ECOR:'ECOR',DEPARTAMENTO:'Todo Olancho'};
 
 const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 function updateInstallButton(){
@@ -250,6 +259,7 @@ function configureTabs(){
   $('button[data-tab="usuarios"]').classList.toggle('hidden',!isAdmin());
   $('button[data-tab="auditoria"]').classList.toggle('hidden',!isAudit());
   $('button[data-tab="evaluacion"]').classList.toggle('hidden',!isAudit());
+  $('button[data-tab="monitoreo"]').classList.toggle('hidden',isGuest()&&!profile.permiso_centro_monitoria);
 }
 function fillDestinations(){
   const sel=$('#destFacility'); if(!sel)return;
@@ -305,7 +315,14 @@ async function loadAudit(){
   }).join('')||'<p class="muted">Sin registros.</p>';
 }
 function renderStats(){
-  $('#statEst').textContent=establishments.length;
+  let visibleEstablishments=establishments;
+  if(isGuest()){
+    const scope=profile.alcance_consulta||'DEPARTAMENTO';
+    if(scope==='ECOR')visibleEstablishments=establishments.filter(e=>e.ecor_id===profile.ecor_id);
+    if(scope==='MUNICIPIO')visibleEstablishments=establishments.filter(e=>e.municipio_id===profile.municipio_id);
+    if(scope==='ESTABLECIMIENTO')visibleEstablishments=establishments.filter(e=>e.id===profile.establecimiento_id);
+  }
+  $('#statEst').textContent=visibleEstablishments.length;
   $('#statCasos').textContent=cases.length;
   $('#statAbiertos').textContent=cases.filter(x=>['ABIERTO','EN_PROCESO'].includes(x.estado_actual)).length;
   $('#statCerrados').textContent=cases.filter(x=>String(x.estado_actual).startsWith('CERRADO')).length;
@@ -352,7 +369,7 @@ function renderMonitoring(){
 }
 function renderEvaluation(){
   if(!isAudit())return;
-  const hospitals=establishments.filter(e=>String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'));
+  const hospitals=establishments.filter(e=>(String(e.tipo).includes('HOSPITAL')||String(e.subtipo||'').toLowerCase().includes('hospital'))&&tramos.some(t=>t.establecimiento_origen_id===e.id||t.establecimiento_destino_id===e.id));
   const total=tramos.length, answered=tramos.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length, closed=tramos.filter(t=>t.estado_actual==='CERRADO').length;
   $('#rrSummary').innerHTML=`<article class="card"><span>Tramos visibles</span><strong>${total}</strong></article><article class="card"><span>Con respuesta</span><strong>${answered}</strong></article><article class="card"><span>Cerrados</span><strong>${closed}</strong></article><article class="card"><span>Nivel R/R</span><strong>${total?Math.round(answered*100/total):0}%</strong></article>`;
   $('#rrHospitals').innerHTML=hospitals.map(h=>{const r=tramos.filter(t=>t.establecimiento_destino_id===h.id), a=r.filter(t=>['RESPUESTA_ENVIADA','RESPUESTA_RECIBIDA','CERRADO'].includes(t.estado_actual)).length;return `<details><summary>${esc(h.nombre)}</summary><p>Referencias recibidas: <strong>${r.length}</strong> · Con respuesta: <strong>${a}</strong> · Nivel R/R: <strong>${r.length?Math.round(a*100/r.length):0}%</strong></p></details>`}).join('');
@@ -405,9 +422,12 @@ function fillUserCatalogs(){
 }
 function userRoleUI(){
   const r=$('#newRole').value;
-  $('#newEcorWrap').classList.toggle('hidden',!['ECOR','JEFE_MUNICIPAL'].includes(r));
-  $('#newMunicipioWrap').classList.toggle('hidden',r!=='JEFE_MUNICIPAL');
-  $('#newEstWrap').classList.toggle('hidden',!['USUARIO_US','USUARIO_HOSPITAL'].includes(r));
+  const guest=r==='AUDITOR_CONSULTA', scope=$('#newScope').value;
+  $('#newScopeWrap').classList.toggle('hidden',!guest);
+  $('#newMonitorWrap').classList.toggle('hidden',!guest);
+  $('#newEcorWrap').classList.toggle('hidden',!(['ECOR','JEFE_MUNICIPAL'].includes(r)||(guest&&scope==='ECOR')));
+  $('#newMunicipioWrap').classList.toggle('hidden',!(r==='JEFE_MUNICIPAL'||(guest&&scope==='MUNICIPIO')));
+  $('#newEstWrap').classList.toggle('hidden',!(['USUARIO_US','USUARIO_HOSPITAL'].includes(r)||(guest&&scope==='ESTABLECIMIENTO')));
 }
 async function createUser(e){
   e.preventDefault(); showMsg('#userMsg','Creando usuario…');
@@ -422,11 +442,52 @@ async function createUser(e){
   const {data,error}=await sb.functions.invoke('sirro-create-user',{body});
   if(error)return showMsg('#userMsg',error.message,'error');
   if(data?.error)return showMsg('#userMsg',data.error,'error');
+  if(body.profile.rol==='AUDITOR_CONSULTA'){
+    const configured=await sb.rpc('sirro_admin_configurar_invitado',{
+      p_usuario:data?.user?.id,
+      p_alcance:$('#newScope').value,
+      p_ecor:$('#newScope').value==='ECOR'?($('#newEcor').value||null):null,
+      p_municipio:$('#newScope').value==='MUNICIPIO'?($('#newMunicipio').value||null):null,
+      p_establecimiento:$('#newScope').value==='ESTABLECIMIENTO'?($('#newEst').value||null):null,
+      p_centro_monitoria:$('#newMonitorPermission').value==='true'
+    });
+    if(configured.error)return showMsg('#userMsg','Usuario creado, pero no se pudo configurar su alcance: '+configured.error.message,'error');
+  }
   showMsg('#userMsg','Usuario creado correctamente: '+body.username,'ok'); e.target.reset(); userRoleUI(); await loadUsers(); renderUsers();
+}
+function guestScopeText(u){
+  const scope=u.alcance_consulta||'DEPARTAMENTO';
+  if(scope==='ECOR')return scopeLabels[scope]+': '+(ecor(u.ecor_id)?.nombre||'Sin asignar');
+  if(scope==='MUNICIPIO')return scopeLabels[scope]+': '+(mun(u.municipio_id)?.nombre||'Sin asignar');
+  if(scope==='ESTABLECIMIENTO')return scopeLabels[scope]+': '+(fac(u.establecimiento_id)?.nombre||'Sin asignar');
+  return scopeLabels.DEPARTAMENTO;
 }
 function renderUsers(){
   if(!isAdmin())return;
-  $('#usersList').innerHTML=users.map(u=>`<div class="item"><div class="row"><div><strong>${esc(u.nombre_completo)}</strong><br><small>${esc(roleLabel(u.rol))} · ${esc(u.correo)} · ${esc(u.telefono)}</small></div><span class="badge">${esc(u.estado)}</span></div><div class="actions">${u.id!==profile.id?`<button class="ghost" onclick="setUserState('${u.id}','ACTIVO')">Activar</button><button class="ghost" onclick="setUserState('${u.id}','AUSENCIA_TEMPORAL')">Ausencia</button><button class="ghost" onclick="setUserState('${u.id}','SUSPENDIDO')">Suspender</button><button class="ghost" onclick="setUserState('${u.id}','INACTIVO')">Inactivar</button>`:''}</div></div>`).join('')||'<p class="muted">Sin usuarios.</p>';
+  $('#usersList').innerHTML=users.map(u=>`<div class="item"><div class="row"><div><strong>${esc(u.nombre_completo)}</strong><br><small>${esc(roleLabel(u.rol))} · ${esc(u.correo)} · ${esc(u.telefono)}</small>${u.rol==='AUDITOR_CONSULTA'?`<br><small>Consulta: ${esc(guestScopeText(u))} · Centro de Monitoría: ${u.permiso_centro_monitoria?'Habilitado':'No habilitado'}</small>`:''}</div><span class="badge">${esc(u.estado)}</span></div><div class="actions">${u.rol==='AUDITOR_CONSULTA'?`<button onclick="configureGuest('${u.id}')">Configurar acceso</button>`:''}${u.id!==profile.id?`<button class="ghost" onclick="setUserState('${u.id}','ACTIVO')">Activar</button><button class="ghost" onclick="setUserState('${u.id}','AUSENCIA_TEMPORAL')">Ausencia</button><button class="ghost" onclick="setUserState('${u.id}','SUSPENDIDO')">Suspender</button><button class="ghost" onclick="setUserState('${u.id}','INACTIVO')">Inactivar</button>`:''}</div></div>`).join('')||'<p class="muted">Sin usuarios.</p>';
+}
+async function configureGuest(id){
+  const u=users.find(x=>x.id===id); if(!u)return;
+  const choice=prompt('Alcance de consulta:\n1. Establecimiento\n2. Municipio\n3. ECOR\n4. Todo el departamento de Olancho',({ESTABLECIMIENTO:'1',MUNICIPIO:'2',ECOR:'3',DEPARTAMENTO:'4'}[u.alcance_consulta]||'4'));
+  if(choice===null)return;
+  const scopes={1:'ESTABLECIMIENTO',2:'MUNICIPIO',3:'ECOR',4:'DEPARTAMENTO'}, scope=scopes[Number(choice)];
+  if(!scope)return alert('Seleccione una opción del 1 al 4.');
+  let est=null,municipio=null,ecorId=null;
+  if(scope==='ESTABLECIMIENTO'){
+    const n=Number(prompt('Seleccione establecimiento:\n'+establishments.map((x,i)=>`${i+1}. ${x.nombre} · RUPS ${x.codigo_rups}`).join('\n')));
+    if(!n||!establishments[n-1])return; est=establishments[n-1].id;
+  }
+  if(scope==='MUNICIPIO'){
+    const n=Number(prompt('Seleccione municipio:\n'+municipios.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n')));
+    if(!n||!municipios[n-1])return; municipio=municipios[n-1].id;
+  }
+  if(scope==='ECOR'){
+    const n=Number(prompt('Seleccione ECOR:\n'+ecors.map((x,i)=>`${i+1}. ${x.nombre}`).join('\n')));
+    if(!n||!ecors[n-1])return; ecorId=ecors[n-1].id;
+  }
+  const monitor=confirm('¿Habilitar el Centro Regional de Monitoría para este Invitado?');
+  const {error}=await sb.rpc('sirro_admin_configurar_invitado',{p_usuario:id,p_alcance:scope,p_ecor:ecorId,p_municipio:municipio,p_establecimiento:est,p_centro_monitoria:monitor});
+  if(error)return alert(error.message); await loadUsers();renderUsers(); alert('Acceso del Invitado actualizado correctamente.');
 }
 async function setUserState(id,state){
   const reason=prompt('Motivo del cambio de estado:'); if(!reason?.trim())return;
@@ -469,6 +530,7 @@ $('#installBtn').onclick=installSirro; updateInstallButton();
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations); $('#refReason').addEventListener('change',toggleOtherReason); toggleOtherReason();
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
+$('#newScope').addEventListener('change',userRoleUI);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
 
