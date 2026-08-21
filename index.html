@@ -276,11 +276,33 @@ async function loadUsers(){
   if(!isAdmin())return users=[];
   const {data}=await sb.from('perfiles').select('*').order('nombre_completo'); users=data||[];
 }
+function auditActionLabel(a){
+  const key=(a.tabla||'')+'|'+(a.accion||'')+'|'+(a.estado_anterior||'')+'|'+(a.estado_nuevo||'');
+  const labels={
+    'casos_referencia|INSERT||ABIERTO':'Referencia creada',
+    'tramos_referencia|INSERT||CREADO':'Tramo creado',
+    'tramos_referencia|UPDATE|CREADO|ENVIADO':'Referencia enviada',
+    'tramos_referencia|UPDATE|ENVIADO|EN_ATENCION':'Recepción ambulatoria',
+    'tramos_referencia|UPDATE|ENVIADO|HOSPITALIZADO':'Recepción hospitalaria',
+    'tramos_referencia|UPDATE|EN_ATENCION|RESPUESTA_ENVIADA':'Respuesta enviada',
+    'tramos_referencia|UPDATE|HOSPITALIZADO|RESPUESTA_ENVIADA':'Alta y respuesta enviada',
+    'tramos_referencia|UPDATE|RESPUESTA_ENVIADA|CERRADO':'Respuesta confirmada y tramo cerrado',
+    'casos_referencia|UPDATE|EN_PROCESO|CERRADO':'Caso cerrado'
+  };
+  return labels[key]||({'INSERT':'Registro creado','UPDATE':'Registro actualizado','DELETE':'Registro eliminado'}[a.accion]||a.accion||'Acción');
+}
 async function loadAudit(){
   if(!isAudit())return $('#auditList').innerHTML='';
-  const {data,error}=await sb.from('auditoria').select('*').order('creado_en',{ascending:false}).limit(200);
+  const {data,error}=await sb.rpc('sirro_auditoria_legible');
   if(error)return $('#auditList').innerHTML='<p class="muted">No se pudo cargar la auditoría.</p>';
-  $('#auditList').innerHTML=(data||[]).map(a=>`<div class="item"><strong>${esc(a.accion)}</strong> · ${esc(a.tabla)}<br><small>${fmt(a.creado_en)}${a.motivo?' · '+esc(a.motivo):''}</small></div>`).join('')||'<p class="muted">Sin registros.</p>';
+  $('#auditList').innerHTML=(data||[]).map(a=>{
+    const state=a.estado_anterior||a.estado_nuevo
+      ?`<br><span>Estado: ${esc(a.estado_anterior||'—')} → ${esc(a.estado_nuevo||'—')}</span>`:'';
+    const user=[a.usuario_nombre,a.usuario_rol].filter(Boolean).map(esc).join(' · ');
+    const place=a.establecimiento_nombre?` · ${esc(a.establecimiento_nombre)}`:'';
+    const reason=a.motivo?`<br><span>Motivo: ${esc(a.motivo)}</span>`:'';
+    return `<div class="item"><strong>${esc(auditActionLabel(a))}</strong>${a.codigo_referencia?` · ${esc(a.codigo_referencia)}`:''}<br><span>Usuario: ${user||'Usuario del sistema'}${place}</span>${state}${reason}<br><small>${fmt(a.fecha_hora)}</small></div>`;
+  }).join('')||'<p class="muted">Sin registros.</p>';
 }
 function renderStats(){
   $('#statEst').textContent=establishments.length;
