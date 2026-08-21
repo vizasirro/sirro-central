@@ -67,5 +67,8 @@ Los reportes son de nivel Regional. El Administrador Regional tiene acceso compl
 
 Filtros según corresponda: período, hospital, ECOR, municipio, establecimiento, especialidad, motivo y estado. Considerar exportación a Excel/PDF.
 
+## Estado de implementación
+La base de datos ya incorpora de forma aditiva los campos para tipo de usuario hospitalario, especialidad y habilitación de reportes; además contiene los tiempos administrativos iniciales y las reglas puerperales en una tabla de solo lectura para usuarios autenticados. La interfaz y los flujos funcionales todavía deben integrarse y verificarse antes de publicar.
+
 ## Pendiente separado
 La activación/configuración efectiva del correo institucional SIRRO.net permanece pendiente y no forma parte de esta implementación.
