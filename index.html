@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b6b57">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SIRRO">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>SIRRO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -27,6 +32,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 .notice{padding:10px 12px;border-radius:9px;background:#eef7f4;margin:8px 0}.error{background:#fff0f0;color:#8d2020}.ok{background:#edf8f0;color:#256536}
 .monitor{display:grid;gap:10px}.monitor details{border:1px solid #d9e2df;border-radius:10px;padding:10px;background:#fff}.monitor summary{cursor:pointer;font-weight:800}
 .user-form-extra{border-top:1px solid #e3ebe8;margin-top:12px;padding-top:10px}
+.install-btn{display:block;width:100%;margin-top:12px}.install-help{margin:8px 0 0}
 @media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
 </style>
 </head>
@@ -47,6 +53,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
   <label>Usuario<input id="loginUser" autocomplete="username"></label>
   <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
   <button id="loginBtn">Ingresar</button>
+  <button id="installBtn" type="button" class="ghost install-btn">Instalar SIRRO</button>
+  <p id="installHelp" class="hint install-help">Instale SIRRO para abrirlo como una aplicación.</p>
   <div id="loginMsg"></div>
 </section>
 
@@ -163,6 +171,7 @@ const SUPABASE_KEY="sb_publishable_l4icMHnXToufRfc7Tvs1UA_22s7z7QZ";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], users=[];
+let deferredInstallPrompt=null;
 const esc=(v='')=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=x=>x?new Date(x).toLocaleString('es-HN'):'';
 const authEmail=u=>{u=u.trim().toLowerCase();return u==='admin'?'victorzepeda1@gmail.com':u.includes('@')?u:u.replace(/[^a-z0-9.+-]/g,'')+'@users.sirro.net'};
@@ -175,6 +184,32 @@ function isAdmin(){return profile?.rol==='ADMIN_REGIONAL'}
 function isAudit(){return ['ADMIN_REGIONAL','AUDITOR_CONSULTA'].includes(profile?.rol)}
 const roleLabels={ADMIN_REGIONAL:'Administrador Regional',ECOR:'ECOR',JEFE_MUNICIPAL:'Jefe Municipal',USUARIO_US:'Usuario de Establecimiento',USUARIO_HOSPITAL:'Usuario de Hospital',AUDITOR_CONSULTA:'Auditor / Consulta'};
 const roleLabel=r=>roleLabels[r]||r||'';
+
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+function updateInstallButton(){
+  if(isStandalone()){
+    $('#installBtn').classList.add('hidden');
+    $('#installHelp').textContent='SIRRO ya está instalado en este dispositivo.';
+  }
+}
+async function installSirro(){
+  if(isStandalone())return updateInstallButton();
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    const {outcome}=await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+    if(outcome==='accepted')updateInstallButton();
+    return;
+  }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios){
+    alert('Para instalar SIRRO en iPhone o iPad: abra esta página en Safari, toque el botón Compartir y seleccione “Añadir a pantalla de inicio”.');
+  }else{
+    alert('Abra el menú del navegador y seleccione “Instalar aplicación” o “Añadir a pantalla de inicio”.');
+  }
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallButton()});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallButton()});
 
 async function login(){
   showMsg('#loginMsg','Ingresando…');
@@ -392,12 +427,16 @@ async function resetAllTestData(){
 
 $$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.tabpane').forEach(x=>x.classList.add('hidden'));$('#tab-'+b.dataset.tab).classList.remove('hidden')});
 $('#loginBtn').onclick=login; $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('#installBtn').onclick=installSirro; updateInstallButton();
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations);
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
 
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
 (async()=>{const {data:{session}}=await sb.auth.getSession();if(session)await enter(session.user)})();
 </script>
 </body>
