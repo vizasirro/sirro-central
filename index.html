@@ -34,7 +34,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 .user-form-extra{border-top:1px solid #e3ebe8;margin-top:12px;padding-top:10px}
 .install-btn{display:block;width:100%;margin-top:12px}.install-help{margin:8px 0 0}
 .link-btn{background:transparent;color:#0b6b57;padding:8px;text-decoration:underline}.top-actions{display:flex;gap:8px;align-items:center}.help-btn{background:#fff;color:#0b6b57;border:2px solid #fff;border-radius:8px;min-width:72px}.help-panel{max-width:760px;margin:24px auto}.help-panel ol{padding-left:24px}.help-panel li{margin:8px 0}.help-panel h3{color:#0b6b57}.help-close{float:right}
-@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
+.notification-settings{border-top:1px solid #d7e4e0;margin-top:18px;padding-top:16px}.switch-row{display:flex;align-items:center;gap:10px;margin:10px 0}.switch-row input{width:auto;margin:0}.notification-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}.notification-options label{display:flex;align-items:center;gap:9px;font-weight:550}.notification-options input{width:auto;margin:0}.settings-status{margin-top:10px}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters,.notification-options{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
 </style>
 </head>
 <body>
@@ -145,7 +146,27 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
   </section>
 
   <section id="tab-notificaciones" class="tabpane hidden">
-    <article class="card"><h2>Notificaciones</h2><div id="notificationsList"></div></article>
+    <article class="card">
+      <h2>Notificaciones</h2>
+      <div id="notificationsList"></div>
+      <div class="notification-settings">
+        <h3>Notificaciones por correo electrónico</h3>
+        <p class="muted">Usted decide cuáles avisos desea recibir. Los mensajes incluyen únicamente información administrativa y un enlace seguro para abrir SIRRO.</p>
+        <label class="switch-row"><input id="emailNotificationsEnabled" type="checkbox"> Activar notificaciones por correo electrónico</label>
+        <div id="emailNotificationOptions" class="notification-options">
+          <label><input type="checkbox" data-email-type="NUEVA_REFERENCIA"> Nueva referencia recibida</label>
+          <label><input type="checkbox" data-email-type="REFERENCIA_URGENTE"> Referencia urgente</label>
+          <label><input type="checkbox" data-email-type="RESPUESTA_DISPONIBLE"> Respuesta o contrarreferencia disponible</label>
+          <label><input type="checkbox" data-email-type="REFERENCIA_RECHAZADA"> Referencia rechazada</label>
+          <label><input type="checkbox" data-email-type="REFERENCIA_SECUNDARIA"> Referencia secundaria</label>
+          <label><input type="checkbox" data-email-type="CIERRE_ADMINISTRATIVO"> Cierre administrativo externo</label>
+          <label><input type="checkbox" data-email-type="ALERTA_AMARILLA"> Alerta amarilla · 24 horas</label>
+          <label><input type="checkbox" data-email-type="ALERTA_ROJA"> Alerta roja · 48 horas</label>
+        </div>
+        <div class="actions"><button id="saveEmailPreferencesBtn" type="button">Guardar preferencias</button></div>
+        <div id="emailPreferencesMsg" class="settings-status"></div>
+      </div>
+    </article>
   </section>
 
   <section id="tab-monitoreo" class="tabpane hidden">
@@ -217,7 +238,7 @@ const SUPABASE_URL="https://nndwrcwahiqlrkbedxqa.supabase.co";
 const SUPABASE_KEY="sb_publishable_l4icMHnXToufRfc7Tvs1UA_22s7z7QZ";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], movements=[], notifications=[], users=[];
+let currentUser=null, profile=null, establishments=[], municipios=[], ecors=[], routes=[], cases=[], tramos=[], movements=[], notifications=[], users=[], emailPreferences=null;
 let deferredInstallPrompt=null;
 const esc=(v='')=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=x=>x?new Date(x).toLocaleString('es-HN'):'';
@@ -379,8 +400,9 @@ function fillDestinations(){
   if(!uniq.length) sel.innerHTML='<option value="">No hay ruta autorizada para este tipo</option>';
 }
 async function refreshAll(){
-  await Promise.all([loadCases(),loadTramos(),loadMovements(),loadNotifications(),loadUsers(),loadAudit()]);
+  await Promise.all([loadCases(),loadTramos(),loadMovements(),loadNotifications(),loadEmailPreferences(),loadUsers(),loadAudit()]);
   renderStats(); renderReceived(); renderTracking(); renderMonitoring(); renderEvaluation(); renderNotifications(); renderUsers();
+  if(emailPreferences?.correo_activo) sb.functions.invoke('sirro-send-email-notifications').catch(()=>{});
 }
 async function fetchAll(table,order='creado_en'){
   const pageSize=1000, rows=[];
@@ -400,6 +422,11 @@ async function loadTramos(){
 }
 async function loadMovements(){try{movements=await fetchAll('movimientos_referencia')}catch{movements=[]}}
 async function loadNotifications(){try{notifications=await fetchAll('notificaciones','creada_en')}catch{notifications=[]}}
+async function loadEmailPreferences(){
+  const {data,error}=await sb.rpc('sirro_mis_preferencias_email');
+  if(error){emailPreferences=null;return}
+  emailPreferences=Array.isArray(data)?data[0]:data;
+}
 async function loadUsers(){
   if(!isAdmin())return users=[];
   const {data}=await sb.from('perfiles').select('*').order('nombre_completo'); users=data||[];
@@ -504,6 +531,38 @@ function renderNotifications(){
   const unread=notifications.filter(n=>!n.leida).length;
   $('#notificationCount').textContent=unread?`(${unread})`:'';
   $('#notificationsList').innerHTML=notifications.map(n=>`<div class="item"><strong>${esc(n.titulo)}</strong>${n.critica?' · CRÍTICA':''}<br><span>${esc(n.mensaje)}</span><br><small>${fmt(n.creada_en)} · ${n.leida?'Leída':`<button class="ghost" onclick="markNotificationRead('${n.id}')">Marcar leída</button>`}</small></div>`).join('')||'<p class="muted">Sin notificaciones.</p>';
+  renderEmailPreferences();
+}
+const emailPreferenceFields={
+  NUEVA_REFERENCIA:'nueva_referencia',REFERENCIA_URGENTE:'referencia_urgente',RESPUESTA_DISPONIBLE:'respuesta_disponible',
+  REFERENCIA_RECHAZADA:'referencia_rechazada',REFERENCIA_SECUNDARIA:'referencia_secundaria',CIERRE_ADMINISTRATIVO:'cierre_administrativo',
+  ALERTA_AMARILLA:'alerta_amarilla',ALERTA_ROJA:'alerta_roja'
+};
+function renderEmailPreferences(){
+  const enabled=!!emailPreferences?.correo_activo;
+  $('#emailNotificationsEnabled').checked=enabled;
+  $$('#emailNotificationOptions input').forEach(input=>{
+    input.checked=emailPreferences?emailPreferences[emailPreferenceFields[input.dataset.emailType]]!==false:true;
+  });
+  toggleEmailPreferenceOptions();
+}
+function toggleEmailPreferenceOptions(){
+  const enabled=$('#emailNotificationsEnabled').checked;
+  $$('#emailNotificationOptions input').forEach(input=>input.disabled=!enabled);
+}
+async function saveEmailPreferences(){
+  const selected={};
+  $$('#emailNotificationOptions input').forEach(input=>selected[emailPreferenceFields[input.dataset.emailType]]=input.checked);
+  showMsg('#emailPreferencesMsg','Guardando preferencias…');
+  const {error}=await sb.rpc('sirro_actualizar_mis_preferencias_email',{
+    p_correo_activo:$('#emailNotificationsEnabled').checked,
+    p_nueva_referencia:selected.nueva_referencia,p_referencia_urgente:selected.referencia_urgente,
+    p_respuesta_disponible:selected.respuesta_disponible,p_referencia_rechazada:selected.referencia_rechazada,
+    p_referencia_secundaria:selected.referencia_secundaria,p_cierre_administrativo:selected.cierre_administrativo,
+    p_alerta_amarilla:selected.alerta_amarilla,p_alerta_roja:selected.alerta_roja
+  });
+  if(error)return showMsg('#emailPreferencesMsg',error.message,'error');
+  await loadEmailPreferences();renderEmailPreferences();showMsg('#emailPreferencesMsg','Preferencias de correo guardadas correctamente.','ok');
 }
 function toggleOtherReason(){
   const isOther=$('#refReason').value==='OTRO';
@@ -702,6 +761,7 @@ $('#refForm').addEventListener('submit',createRef); $('#refType').addEventListen
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
 $('#newScope').addEventListener('change',userRoleUI);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
+$('#emailNotificationsEnabled').addEventListener('change',toggleEmailPreferenceOptions); $('#saveEmailPreferencesBtn').onclick=saveEmailPreferences;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
 
 sb.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')showPasswordRecovery()});
