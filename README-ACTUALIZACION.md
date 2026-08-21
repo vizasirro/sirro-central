@@ -23,7 +23,8 @@ Este paquete elimina del flujo principal el uso de `localStorage` para usuarios 
 - Evaluación R/R usa movimientos históricos y la carga operativa deja de truncarse en 500/1,000 registros.
 - El inicio de sesión resuelve el alias en el servidor; el correo del administrador deja de estar escrito en el código público.
 - La creación de usuarios exige confirmar la contraseña.
-- Se actualiza la caché PWA a `sirro-v020` sin eliminar archivos históricos del repositorio.
+- Se actualiza la caché PWA a `sirro-v021` sin eliminar archivos históricos del repositorio.
 - Supabase: `sirro_enviar_respuesta_v2` dejó de ser ejecutable por usuarios anónimos y conserva acceso para usuarios autenticados.
 - Se agrega recuperación de contraseña por correo desde “¿Olvidaste tu contraseña?” y formulario seguro para definir la nueva clave.
 - Se incorpora el botón AYUDA con instrucciones paso a paso específicas para cada rol de SIRRO.
+- Segunda revisión posterior al despliegue: los tramos `EVALUADO` permanecen en Recibidas para permitir responder desde la misma bandeja hospitalaria.
