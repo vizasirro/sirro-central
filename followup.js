@@ -1,7 +1,7 @@
 (() => {
   let postFollowups = [];
 
-  const isDateInput = v => /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}$/.test(String(v || '').trim());
+  const isDateInput = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(v || '').trim()) || /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(v || '').trim());
   const hnTimestamp = v => String(v).trim().replace(' ', 'T') + ':00-06:00';
   const fmtFollowup = v => v ? new Date(v).toLocaleString('es-HN') : '';
 
@@ -16,7 +16,35 @@
   }
 
   function followupForTramo(id){
-    return postFollowups.filter(x=>x.tramo_id===id);
+    return postFollowups.filter(x=>x.tramo_id===id).sort((a,b)=>(a.numero_control||0)-(b.numero_control||0));
+  }
+
+  function canCompletePuerperal(t){
+    const c=caseOf(t.caso_id);
+    if(!profile?.establecimiento_id||!c)return false;
+    if(t.estado_actual==='HOSPITALIZADO'){
+      return profile.rol==='USUARIO_HOSPITAL' && profile.establecimiento_id===t.establecimiento_destino_id;
+    }
+    return profile.establecimiento_id===c.establecimiento_origen_inicial_id;
+  }
+
+  function deliveryRegistrationHtml(t){
+    const c=caseOf(t.caso_id);
+    if(!c || c.motivo!=='ATENCION_MATERNA')return '';
+    const hospitalUser=profile?.rol==='USUARIO_HOSPITAL' && profile?.establecimiento_id===t.establecimiento_destino_id;
+    if(!hospitalUser)return '';
+    const control1=followupForTramo(t.id).find(x=>x.tipo==='PUERPERAL' && Number(x.numero_control||1)===1);
+    const parto=control1?.fecha_base;
+    const inputId=`parto-${t.id}`;
+    return `<div class="notice ${parto?'ok':''}">
+      <strong>Fecha y hora del parto</strong><br>
+      ${parto?`Registrada: <strong>${esc(fmtFollowup(parto))}</strong><br>`:'Debe registrarse para iniciar automáticamente los controles puerperales.<br>'}
+      <div class="actions" style="align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <input id="${inputId}" type="datetime-local" aria-label="Fecha y hora del parto" style="max-width:230px">
+        <button class="ghost" onclick="registerDelivery('${t.id}')">${parto?'Actualizar fecha/hora':'Registrar parto'}</button>
+      </div>
+      <small>Puede registrarlo un usuario hospitalario autorizado, incluida auxiliar de enfermería con perfil hospitalario.</small>
+    </div>`;
   }
 
   function followupHtml(t){
@@ -25,9 +53,19 @@
     return rows.map(s=>{
       if(s.tipo==='PUERPERAL'){
         const done=s.estado==='COMPLETADA';
-        const action=!done && profile?.establecimiento_id===caseOf(t.caso_id)?.establecimiento_origen_inicial_id
-          ? `<div class="actions"><button class="ghost" onclick="completePuerperal('${t.id}')">Marcar control puerperal realizado</button></div>`:'';
-        return `<div class="notice ${done?'ok':''}"><strong>Seguimiento puerperal</strong><br>${done?'Control registrado como realizado.':`Control obligatorio entre <strong>${esc(fmtFollowup(s.ventana_desde))}</strong> y <strong>${esc(fmtFollowup(s.ventana_hasta))}</strong> (24–48 horas después del alta).`} ${action}</div>`;
+        const n=Number(s.numero_control||1);
+        const action=!done && canCompletePuerperal(t)
+          ? `<div class="actions"><button class="ghost" onclick="completePuerperal('${t.id}',${n})">Marcar control ${n} realizado</button></div>`:'';
+        let schedule='';
+        if(n===1){
+          schedule=`Primer control: <strong>a las 48 horas del parto</strong> · ${esc(fmtFollowup(s.ventana_desde))}.`;
+        }else if(n===2){
+          schedule=`Segundo control: entre <strong>${esc(fmtFollowup(s.ventana_desde))}</strong> y <strong>${esc(fmtFollowup(s.ventana_hasta))}</strong> (3–7 días después del parto).`;
+        }else{
+          schedule=`Control puerperal ${n}.`;
+        }
+        const responsible=t.estado_actual==='HOSPITALIZADO'?'Responsable actual: hospital (paciente continúa ingresada).':'Responsable actual: establecimiento de origen después del alta.';
+        return `<div class="notice ${done?'ok':''}"><strong>Control puerperal ${n}</strong><br>${done?`Control registrado como realizado${s.completado_en?` el <strong>${esc(fmtFollowup(s.completado_en))}</strong>`:''}.`:`${schedule}<br>${responsible}`} ${action}</div>`;
       }
       if(s.tipo==='CONSULTA_EXTERNA'){
         const pending=s.estado==='PENDIENTE_ASIGNACION';
@@ -44,7 +82,7 @@
   const baseTramoItem=tramoItem;
   tramoItem=function(t,withActions=true){
     const html=baseTramoItem(t,withActions);
-    const extra=followupHtml(t);
+    const extra=deliveryRegistrationHtml(t)+followupHtml(t);
     if(!extra)return html;
     const i=html.lastIndexOf('</div>');
     return i>=0?html.slice(0,i)+extra+html.slice(i):html+extra;
@@ -56,23 +94,25 @@
     await baseRefreshAll();
   };
 
+  window.registerDelivery=async function(id){
+    const el=document.getElementById(`parto-${id}`);
+    const value=el?.value;
+    if(!isDateInput(value))return alert('Seleccione la fecha y la hora del parto.');
+    const existing=followupForTramo(id).find(x=>x.tipo==='PUERPERAL' && Number(x.numero_control||1)===1)?.fecha_base;
+    if(existing && !confirm('Ya existe una fecha y hora de parto. ¿Desea actualizarla? El cambio quedará auditado y recalculará los controles puerperales.'))return;
+    const {error}=await sb.rpc('sirro_registrar_parto',{p_tramo:id,p_fecha_parto:hnTimestamp(value)});
+    if(error)return alert(error.message);
+    await refreshAll();
+    alert('Fecha y hora del parto registradas. Los controles puerperales fueron calculados automáticamente.');
+  };
+
   answerTramo=async function(id){
     const detail=prompt('Escriba la respuesta / contrarreferencia:');
     if(!detail?.trim())return;
     const t=tramos.find(x=>x.id===id), c=caseOf(t?.caso_id);
     if(!t||!c)return;
 
-    let parto=null, fechaAlta=null, citaEstado=null, fechaCita=null;
-
-    if(c.motivo==='ATENCION_MATERNA'){
-      parto=confirm('ATENCIÓN MATERNA\n\n¿La paciente tuvo parto durante esta atención?\n\nAceptar = Sí · Cancelar = No');
-      if(parto){
-        const alta=prompt('Fecha y hora del ALTA hospitalaria (AAAA-MM-DD HH:MM).\n\nEs obligatoria para calcular el control puerperal de 24–48 horas:');
-        if(alta===null)return;
-        if(!isDateInput(alta))return alert('Formato inválido. Use AAAA-MM-DD HH:MM, por ejemplo: 2026-08-22 14:30.');
-        fechaAlta=hnTimestamp(alta);
-      }
-    }
+    let citaEstado=null, fechaCita=null;
 
     if(String(c.motivo||'').startsWith('CE_')){
       const cita=prompt('CONSULTA EXTERNA\n\nEscriba la fecha y hora de la cita (AAAA-MM-DD HH:MM).\nSi todavía no ha sido asignada, escriba: PENDIENTE');
@@ -91,8 +131,8 @@
       p_tramo:id,
       p_detalle:detail.trim(),
       p_modo:mode,
-      p_parto:parto,
-      p_fecha_alta:fechaAlta,
+      p_parto:null,
+      p_fecha_alta:null,
       p_cita_estado:citaEstado,
       p_fecha_cita:fechaCita
     });
@@ -109,10 +149,10 @@
     await refreshAll();
   };
 
-  window.completePuerperal=async function(id){
-    const obs=prompt('Observación del control puerperal realizado (opcional):');
+  window.completePuerperal=async function(id,numeroControl){
+    const obs=prompt(`Observación del control puerperal ${numeroControl} realizado (opcional):`);
     if(obs===null)return;
-    const {error}=await sb.rpc('sirro_completar_control_puerperal',{p_tramo:id,p_observacion:obs.trim()||null});
+    const {error}=await sb.rpc('sirro_completar_control_puerperal',{p_tramo:id,p_observacion:obs.trim()||null,p_numero_control:numeroControl});
     if(error)return alert(error.message);
     await refreshAll();
   };
