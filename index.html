@@ -108,7 +108,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
       <div class="readonlybox full" id="originBox"></div>
       <label>Nombre del paciente<input id="patientName" required></label>
       <label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" pattern="[0-9]{13}" required></label>
-      <label>Teléfono de contacto<input id="patientContact" inputmode="tel" minlength="8" maxlength="15" pattern="[0-9+ -]{8,15}" required></label>
+      <label>Teléfono de contacto<input id="patientContact" inputmode="numeric" minlength="8" maxlength="8" pattern="[0-9]{8}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)" required></label>
       <label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label>
       <label>Motivo<select id="refReason">
         <option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option>
@@ -460,12 +460,12 @@ async function loadAudit(){
   }).join('')||'<p class="muted">Sin registros.</p>';
 }
 function renderStats(){
-  let visibleEstablishments=establishments;
+  let visibleEstablishments=establishments.filter(e=>!String(e.codigo_rups||'').startsWith('EXT-'));
   if(isGuest()){
     const scope=profile.alcance_consulta||'DEPARTAMENTO';
-    if(scope==='ECOR')visibleEstablishments=establishments.filter(e=>e.ecor_id===profile.ecor_id);
-    if(scope==='MUNICIPIO')visibleEstablishments=establishments.filter(e=>e.municipio_id===profile.municipio_id);
-    if(scope==='ESTABLECIMIENTO')visibleEstablishments=establishments.filter(e=>e.id===profile.establecimiento_id);
+    if(scope==='ECOR')visibleEstablishments=visibleEstablishments.filter(e=>e.ecor_id===profile.ecor_id);
+    if(scope==='MUNICIPIO')visibleEstablishments=visibleEstablishments.filter(e=>e.municipio_id===profile.municipio_id);
+    if(scope==='ESTABLECIMIENTO')visibleEstablishments=visibleEstablishments.filter(e=>e.id===profile.establecimiento_id);
   }
   $('#statEst').textContent=visibleEstablishments.length;
   $('#statCasos').textContent=cases.length;
@@ -780,5 +780,6 @@ if('serviceWorker' in navigator){
 }
 (async()=>{const {data:{session}}=await sb.auth.getSession();if(session)await enter(session.user)})();
 </script>
+<script src="./followup.js"></script>
 </body>
 </html>
