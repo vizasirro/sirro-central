@@ -643,17 +643,26 @@ async function closeTramo(id){
 }
 function fillUserCatalogs(){
   $('#newEcor').innerHTML='<option value="">Seleccione</option>'+ecors.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
-  $('#newMunicipio').innerHTML='<option value="">Seleccione</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
-  $('#newEst').innerHTML='<option value="">Seleccione</option>'+establishments.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
+  $('#newMunicipio').innerHTML='<option value="">Seleccione municipio</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+  fillUserEstablishments();
+}
+function fillUserEstablishments(){
+  const municipioId=$('#newMunicipio').value;
+  const options=municipioId?establishments.filter(x=>x.municipio_id===municipioId):[];
+  $('#newEst').innerHTML='<option value="">'+(municipioId?'Seleccione establecimiento':'Seleccione primero un municipio')+'</option>'+options.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
+  $('#newEst').disabled=!municipioId;
 }
 function userRoleUI(){
   const r=$('#newRole').value;
   const guest=r==='AUDITOR_CONSULTA', scope=$('#newScope').value;
+  const needsEstablishment=['USUARIO_US','USUARIO_HOSPITAL'].includes(r)||(guest&&scope==='ESTABLECIMIENTO');
   $('#newScopeWrap').classList.toggle('hidden',!guest);
   $('#newMonitorWrap').classList.toggle('hidden',!guest);
   $('#newEcorWrap').classList.toggle('hidden',!(['ECOR','JEFE_MUNICIPAL'].includes(r)||(guest&&scope==='ECOR')));
-  $('#newMunicipioWrap').classList.toggle('hidden',!(r==='JEFE_MUNICIPAL'||(guest&&scope==='MUNICIPIO')));
-  $('#newEstWrap').classList.toggle('hidden',!(['USUARIO_US','USUARIO_HOSPITAL'].includes(r)||(guest&&scope==='ESTABLECIMIENTO')));
+  $('#newMunicipioWrap').classList.toggle('hidden',!(r==='JEFE_MUNICIPAL'||needsEstablishment||(guest&&scope==='MUNICIPIO')));
+  $('#newEstWrap').classList.toggle('hidden',!needsEstablishment);
+  if(!needsEstablishment) $('#newEst').value='';
+  fillUserEstablishments();
 }
 async function createUser(e){
   e.preventDefault(); showMsg('#userMsg','Creando usuario…');
@@ -759,7 +768,7 @@ $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
 $('#helpBtn').onclick=showHelp; $('#closeHelpBtn').onclick=closeHelp;
 $('#refForm').addEventListener('submit',createRef); $('#refType').addEventListener('change',fillDestinations); $('#refReason').addEventListener('change',toggleOtherReason); toggleOtherReason();
 $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventListener('change',userRoleUI);
-$('#newScope').addEventListener('change',userRoleUI);
+$('#newScope').addEventListener('change',userRoleUI); $('#newMunicipio').addEventListener('change',fillUserEstablishments);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#emailNotificationsEnabled').addEventListener('change',toggleEmailPreferenceOptions); $('#saveEmailPreferencesBtn').onclick=saveEmailPreferences;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
