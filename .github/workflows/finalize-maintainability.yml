@@ -1,0 +1,52 @@
+name: Finalize maintainability
+
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-maintainability.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract main application script and pin Supabase JS
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3')
+          matches=list(re.finditer(r'<script>(.*?)</script>',s,re.S))
+          if len(matches)!=1:
+              raise SystemExit(f'Expected exactly one inline script, found {len(matches)}')
+          m=matches[0]
+          code=m.group(1).strip()+"\n"
+          Path('app-main.js').write_text(code)
+          s=s[:m.start()]+'<script src="./app-main.js"></script>'+s[m.end():]
+          p.write_text(s)
+          sw=Path('sw.js').read_text()
+          sw=re.sub(r"const CACHE='sirro-v\d+';","const CACHE='sirro-v037';",sw)
+          if "'./app-main.js'" not in sw:
+              sw=sw.replace("'./sirro-core.js'","'./app-main.js','./sirro-core.js'")
+          Path('sw.js').write_text(sw)
+          PY
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app-main.js
+          node --check sirro-core.js
+          node --check followup.js
+          node --check pendientes.js
+          node --check reportes.js
+          node --check admin-pruebas.js
+      - name: Commit generated refactor
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html app-main.js sw.js
+          git commit -m 'refactor: externalize main app script and pin Supabase JS' || exit 0
+          git push
