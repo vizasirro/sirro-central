@@ -50,7 +50,7 @@
   });
 
   window.SIRRO = Object.freeze({
-    version: 'core-2',
+    version: 'core-3',
     constants: Object.freeze({ ROLES, TZ, PUERPERIO }),
     api,
     errors,
@@ -69,4 +69,5 @@
 
   loadModule('./auth-security.js', 'SIRRO_AUTH_SECURITY');
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
+  loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
 })();
