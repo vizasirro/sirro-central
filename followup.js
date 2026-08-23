@@ -22,6 +22,16 @@
     }
     link.style.display=login&&!login.classList.contains('hidden')?'inline-flex':'none';
   }
+  function ensureDynamicTabNavigation(){
+    if(window.__sirroDynamicTabNavigation)return;
+    window.__sirroDynamicTabNavigation=true;
+    document.addEventListener('click',e=>{
+      const b=e.target.closest?.('#tabs button[data-tab]'); if(!b)return;
+      const pane=document.getElementById('tab-'+b.dataset.tab); if(!pane)return;
+      document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      document.querySelectorAll('.tabpane').forEach(x=>x.classList.add('hidden'));pane.classList.remove('hidden');
+    });
+  }
   function loadScriptOnce(src){
     if(document.querySelector(`script[src="${src}"]`))return Promise.resolve();
     return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error(`No se pudo cargar ${src}`));document.body.appendChild(s);});
@@ -61,7 +71,7 @@
   window.completePuerperal=async function(id,numeroControl){document.getElementById('sirroDateTimeModal')?.remove();const prefix=`control-${id}-${numeroControl}`,box=document.createElement('div');box.id='sirroDateTimeModal';box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';box.innerHTML=`<div class="card" style="max-width:540px;width:100%"><h3>Control puerperal ${numeroControl}</h3>${dateTimeFields(prefix,'del control',true)}<label>Observación (opcional)<textarea id="${prefix}-obs" rows="3"></textarea></label><div class="actions"><button class="primary" onclick="savePuerperalControl('${id}',${numeroControl},'${prefix}')">Registrar control</button><button class="ghost" onclick="closeClinicalDateTime()">Cancelar</button></div></div>`;document.body.appendChild(box);setNowClinical(`${prefix}-date`,`${prefix}-time`);};
   window.savePuerperalControl=async function(id,numeroControl,prefix){const value=dateTimeValue(`${prefix}-date`,`${prefix}-time`);if(!isDateInput(value))return alert('Seleccione la fecha y hora real del control.');if(new Date(hnTimestamp(value)).getTime()>Date.now()+60000)return alert('La fecha y hora del control no pueden estar en el futuro.');const obs=document.getElementById(`${prefix}-obs`)?.value.trim()||null;const {error}=await sb.rpc('sirro_completar_control_puerperal_v2',{p_tramo:id,p_numero_control:numeroControl,p_fecha_control:hnTimestamp(value),p_observacion:obs});if(error)return alert(error.message);closeClinicalDateTime();await refreshAll();};
 
-  const start=async()=>{ensureBrand();await loadPostFollowups();try{renderTracking();renderReceived();}catch{}renderFollowupLoadStatus();};
+  const start=async()=>{ensureDynamicTabNavigation();ensureBrand();await loadPostFollowups();try{renderTracking();renderReceived();}catch{}renderFollowupLoadStatus();};
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',()=>{start();ensureFeatureModules();const login=document.getElementById('loginView');if(login)new MutationObserver(ensureBrand).observe(login,{attributes:true,attributeFilter:['class']});});
   }else{
