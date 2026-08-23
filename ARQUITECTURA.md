@@ -11,25 +11,26 @@
 
 ## Módulos actuales
 
-- `index.html`: shell histórico de la aplicación, autenticación, referencias, usuarios y navegación principal. Se conserva estable mientras se migra gradualmente.
+- `index.html`: shell visual, formularios y carga explícita de módulos. Ya no contiene el bloque JavaScript principal en línea.
+- `app-main.js`: autenticación, catálogos, referencias, usuarios, navegación y renderizado principal heredado de `index.html`.
 - `sirro-core.js`: núcleo compartido. Roles, zona horaria, reglas constantes, acceso común a Supabase y normalización de errores.
 - `followup.js`: seguimiento postreferencia, consulta externa y controles puerperales.
 - `pendientes.js`: lista priorizada de acciones pendientes.
 - `reportes.js`: reportes y vistas consolidadas.
-- `admin-pruebas.js`: funciones exclusivas del modo de pruebas, incluido borrado de usuarios y reinicio general.
-- `sw.js`: PWA/cache. Temporalmente incorpora `sirro-core.js` y `admin-pruebas.js` en navegación para conservar compatibilidad con instalaciones existentes. No debe añadirse nueva lógica de negocio aquí.
+- `admin-pruebas.js`: funciones exclusivas del modo de pruebas, incluido borrado individual de usuarios y reinicio general.
+- `sw.js`: PWA/cache únicamente; no debe contener lógica de negocio.
+- `tests/`: pruebas transaccionales y matrices de permisos por perfil.
 - `supabase/migrations/`: historial reproducible de cambios de base.
 - `supabase/functions/`: Edge Functions de servidor.
 
 ## Dirección de refactorización
 
-La migración debe ser incremental, no una reescritura:
+La migración continúa de forma incremental, no como reescritura:
 
-1. Mover constantes compartidas a `sirro-core.js`.
+1. Mantener constantes compartidas en `sirro-core.js`.
 2. Migrar llamadas directas `sb.rpc`, `sb.from` y `sb.functions.invoke` hacia `SIRRO.api` módulo por módulo.
-3. Extraer del `index.html`, en este orden: autenticación, catálogos, referencias, usuarios y auditoría.
-4. Cuando todos los perfiles hayan sido probados, cargar `sirro-core.js` y `admin-pruebas.js` directamente desde `index.html` y eliminar la incorporación transitoria del Service Worker.
-5. Retirar RPC antiguas solo después de comprobar que no hay consumidores activos.
+3. Extraer de `app-main.js`, cuando exista cobertura de pruebas suficiente, autenticación, catálogos, referencias, usuarios y auditoría en archivos independientes.
+4. Retirar RPC antiguas solo después de comprobar que no hay consumidores activos.
 
 ## Contratos que no deben romperse
 
@@ -39,6 +40,7 @@ La migración debe ser incremental, no una reescritura:
 - La auditoría histórica se conserva aun cuando se elimine un usuario de prueba.
 - La clave `service_role` nunca se expone en frontend.
 - El frontend usa únicamente clave publishable.
+- Supabase JS del navegador debe estar fijado a una versión exacta y validado por CI.
 
 ## Convenciones
 
