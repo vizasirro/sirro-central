@@ -1,5 +1,5 @@
 (() => {
-  const isAdmin=()=>window.profile?.rol==='ADMIN_REGIONAL';
+  const isAdmin=()=>typeof profile!=='undefined'&&profile?.rol==='ADMIN_REGIONAL';
 
   function updateTestModeCopy(){
     const resetBtn=document.getElementById('resetAllBtn');
@@ -13,7 +13,7 @@
 
   async function deleteTestUser(id){
     if(!isAdmin())return alert('Solo el Administrador Regional puede borrar usuarios.');
-    const u=(window.users||[]).find(x=>x.id===id);
+    const u=(typeof users!=='undefined'?users:[]).find(x=>x.id===id);
     if(!u)return alert('Usuario no encontrado.');
     if(u.rol==='ADMIN_REGIONAL')return alert('Los Administradores Regionales están protegidos y no pueden borrarse.');
     if(!confirm(`¿Borrar definitivamente al usuario de prueba ${u.nombre_completo}?\n\nEsta acción elimina su acceso, pero conserva la trazabilidad histórica de las operaciones realizadas.`))return;
@@ -28,15 +28,15 @@
   }
   window.deleteTestUser=deleteTestUser;
 
-  const baseRenderUsers=window.renderUsers;
-  if(typeof baseRenderUsers==='function'){
-    window.renderUsers=function(){
+  const baseRenderUsers=typeof renderUsers==='function'?renderUsers:null;
+  if(baseRenderUsers){
+    renderUsers=function(){
       baseRenderUsers();
       if(!isAdmin())return;
       const list=document.getElementById('usersList');
       if(!list)return;
       const rows=[...list.children];
-      (window.users||[]).forEach((u,i)=>{
+      (typeof users!=='undefined'?users:[]).forEach((u,i)=>{
         if(u.rol==='ADMIN_REGIONAL')return;
         const row=rows[i]; if(!row)return;
         const actions=row.querySelector('.actions'); if(!actions||actions.querySelector(`[data-delete-user="${u.id}"]`))return;
@@ -49,9 +49,8 @@
     };
   }
 
-  const baseReset=window.resetAllTestData;
-  if(typeof baseReset==='function'){
-    window.resetAllTestData=async function(){
+  if(typeof resetAllTestData==='function'){
+    resetAllTestData=async function(){
       if(!isAdmin())return;
       const first=confirm('MODO DE PRUEBAS\n\nEsta acción borrará TODAS las referencias y TODOS los usuarios de prueba. Se conservarán únicamente los Administradores Regionales y la configuración estructural de SIRRO. ¿Desea continuar?');
       if(!first)return;
@@ -67,9 +66,9 @@
       if(typeof refreshAll==='function')await refreshAll();
     };
     const btn=document.getElementById('resetAllBtn');
-    if(btn)btn.onclick=window.resetAllTestData;
+    if(btn)btn.onclick=resetAllTestData;
   }
 
   updateTestModeCopy();
-  if(isAdmin()&&typeof window.renderUsers==='function')window.renderUsers();
+  if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
