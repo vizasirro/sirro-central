@@ -41,3 +41,23 @@ jobs:
         run: |
           grep -q '@supabase/supabase-js@2.112.3' index.html
           ! grep -q '@supabase/supabase-js@2"' index.html
+      - name: CANDADO SIRRO - prohibit privileged secrets in browser code
+        shell: bash
+        run: |
+          set -e
+          if grep -RInE '(service_role|SUPABASE_SERVICE_ROLE|serviceRoleKey|postgres(ql)?://[^[:space:]"'"']+:[^[:space:]"'"']+@)' --include='*.js' --include='*.html' --include='*.json' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo 'CANDADO SIRRO: se detectó un secreto privilegiado o credencial de base de datos en código público.'
+            exit 1
+          fi
+      - name: CANDADO SIRRO - prohibit privileged Auth administration in browser
+        shell: bash
+        run: |
+          set -e
+          if grep -RInE '(auth\.admin\.|createClient\([^)]*service_role)' --include='*.js' --include='*.html' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo 'CANDADO SIRRO: operaciones administrativas de Auth no pueden ejecutarse desde el navegador.'
+            exit 1
+          fi
+      - name: CANDADO SIRRO - security contract
+        shell: bash
+        run: |
+          test -f CANDADO-SIRRO.md
