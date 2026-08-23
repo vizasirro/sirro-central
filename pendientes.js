@@ -17,67 +17,49 @@
     document.querySelectorAll('.tabpane').forEach(x=>x.classList.add('hidden')); document.getElementById(`tab-${name}`)?.classList.remove('hidden');
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  async function loadFollowups(){
-    try{if(typeof fetchAll!=='function')return;pendientesFollowups=await fetchAll('seguimientos_postreferencia');if(!Array.isArray(pendientesFollowups))pendientesFollowups=[];}catch{pendientesFollowups=[];}
-  }
+  async function loadFollowups(){try{if(typeof fetchAll!=='function')return;pendientesFollowups=await fetchAll('seguimientos_postreferencia');if(!Array.isArray(pendientesFollowups))pendientesFollowups=[];}catch{pendientesFollowups=[];}}
   function responsablePuerperal(t,c){const p=getProfile();if(!p?.establecimiento_id)return false;if(t.estado_actual==='HOSPITALIZADO')return p.rol==='USUARIO_HOSPITAL'&&p.establecimiento_id===t.establecimiento_destino_id;return p.establecimiento_id===c.establecimiento_origen_inicial_id;}
   function priorityForWindow(s){if(!s?.ventana_desde)return {rank:3,label:'PENDIENTE'};const n=now(),desde=new Date(s.ventana_desde).getTime(),hasta=s.ventana_hasta?new Date(s.ventana_hasta).getTime():desde;if(n>hasta)return {rank:0,label:'VENCIDO'};if(n>=desde)return {rank:1,label:'REQUIERE ATENCIÓN'};if(desde-n<=24*3600000)return {rank:2,label:'PRÓXIMO'};return {rank:3,label:'PENDIENTE'};}
 
   function buildActions(){
     const out=[],p=getProfile();if(!p)return out;
+    const pushAction=(t,row)=>out.push({...row,tramoId:t?.id||null,casoId:t?.caso_id||null});
     for(const t of getTramos()){
       const c=byCase(t.caso_id),detail=`${c.codigo_visible||''} · ${c.paciente_nombre||''}`;
       if(p.establecimiento_id===t.establecimiento_destino_id){
-        if(t.estado_actual==='ENVIADO')out.push({rank:1,type:'accion',title:'Referencia por recibir',detail,button:'Abrir recibidas',run:()=>showTab('recibidas')});
-        if(t.estado_actual==='EN_ATENCION')out.push({rank:2,type:'accion',title:'Evaluación pendiente',detail,button:'Registrar evaluación',run:()=>typeof evaluateTramo==='function'&&evaluateTramo(t.id)});
-        if(['EVALUADO','HOSPITALIZADO'].includes(t.estado_actual))out.push({rank:1,type:'accion',title:'Respuesta / contrarreferencia pendiente',detail,button:'Responder',run:()=>typeof answerTramo==='function'&&answerTramo(t.id)});
+        if(t.estado_actual==='ENVIADO')pushAction(t,{rank:1,type:'accion',title:'Referencia por recibir',detail,button:'Abrir recibidas',run:()=>showTab('recibidas')});
+        if(t.estado_actual==='EN_ATENCION')pushAction(t,{rank:2,type:'accion',title:'Evaluación pendiente',detail,button:'Registrar evaluación',run:()=>typeof evaluateTramo==='function'&&evaluateTramo(t.id)});
+        if(['EVALUADO','HOSPITALIZADO'].includes(t.estado_actual))pushAction(t,{rank:1,type:'accion',title:'Respuesta / contrarreferencia pendiente',detail,button:'Responder',run:()=>typeof answerTramo==='function'&&answerTramo(t.id)});
       }
       if(p.establecimiento_id===t.establecimiento_origen_id){
-        if(t.estado_actual==='RESPUESTA_ENVIADA')out.push({rank:1,type:'accion',title:'Respuesta lista para confirmar',detail,button:'Revisar y cerrar',run:()=>typeof closeTramo==='function'&&closeTramo(t.id)});
-        if(t.estado_actual==='RECHAZADO')out.push({rank:0,type:'accion',title:'Referencia rechazada por corregir',detail,button:'Corregir y reenviar',run:()=>typeof reorientTramo==='function'&&reorientTramo(t.id)});
+        if(t.estado_actual==='RESPUESTA_ENVIADA')pushAction(t,{rank:1,type:'accion',title:'Respuesta lista para confirmar',detail,button:'Revisar y cerrar',run:()=>typeof closeTramo==='function'&&closeTramo(t.id)});
+        if(t.estado_actual==='RECHAZADO')pushAction(t,{rank:0,type:'accion',title:'Referencia rechazada por corregir',detail,button:'Corregir y reenviar',run:()=>typeof reorientTramo==='function'&&reorientTramo(t.id)});
       }
     }
     for(const s of pendientesFollowups){
       if(s.estado==='COMPLETADA')continue;const t=tramoById(s.tramo_id);if(!t)continue;const c=byCase(t.caso_id),detail=`${c.codigo_visible||''} · ${c.paciente_nombre||''}${s.ventana_desde?` · ${safeFmt(s.ventana_desde)}`:''}`;
-      if(s.tipo==='PUERPERAL'&&responsablePuerperal(t,c)){const n=Number(s.numero_control||1),pri=priorityForWindow(s);out.push({rank:pri.rank,type:'accion',title:`Control puerperal ${n} · ${pri.label}`,detail,button:'Registrar control',run:()=>window.completePuerperal?.(t.id,n)});}
-      if(s.tipo==='CONSULTA_EXTERNA'&&s.estado==='PENDIENTE_ASIGNACION'&&p.establecimiento_id===t.establecimiento_destino_id){const age=(now()-new Date(s.creado_en).getTime())/3600000;out.push({rank:age>=48?0:age>=24?1:2,type:'accion',title:'Cita de consulta externa pendiente',detail,button:'Asignar cita',run:()=>window.assignCeAppointment?.(t.id)});}
+      if(s.tipo==='PUERPERAL'&&responsablePuerperal(t,c)){const n=Number(s.numero_control||1),pri=priorityForWindow(s);pushAction(t,{rank:pri.rank,type:'accion',title:`Control puerperal ${n} · ${pri.label}`,detail,button:'Registrar control',run:()=>window.completePuerperal?.(t.id,n)});}
+      if(s.tipo==='CONSULTA_EXTERNA'&&s.estado==='PENDIENTE_ASIGNACION'&&p.establecimiento_id===t.establecimiento_destino_id){const age=(now()-new Date(s.creado_en).getTime())/3600000;pushAction(t,{rank:age>=48?0:age>=24?1:2,type:'accion',title:'Cita de consulta externa pendiente',detail,button:'Asignar cita',run:()=>window.assignCeAppointment?.(t.id)});}
     }
-    const actionTramos=new Set();
-    for(const n of getNotifications().filter(n=>!n.leida))out.push({rank:n.critica?1:3,type:'info',title:n.titulo||'Aviso',detail:n.mensaje||'',fecha:n.creada_en,button:'Abrir notificaciones',run:()=>showTab('notificaciones')});
+    const actionTramos=new Set(out.filter(x=>x.type==='accion'&&x.tramoId).map(x=>String(x.tramoId)));
+    const actionCases=new Set(out.filter(x=>x.type==='accion'&&x.casoId).map(x=>String(x.casoId)));
+    for(const n of getNotifications().filter(n=>!n.leida)){
+      const notificationTramo=n.tramo_id!=null?String(n.tramo_id):null;
+      const notificationCase=n.caso_id!=null?String(n.caso_id):null;
+      if((notificationTramo&&actionTramos.has(notificationTramo))||(notificationCase&&actionCases.has(notificationCase)))continue;
+      out.push({rank:n.critica?1:3,type:'info',title:n.titulo||'Aviso',detail:n.mensaje||'',fecha:n.creada_en,button:'Abrir notificaciones',run:()=>showTab('notificaciones')});
+    }
     return out.sort((a,b)=>a.rank-b.rank);
   }
   const group=x=>x.rank===0?'pending':x.rank===1?'attention':'upcoming';
   const colors={pending:{bg:'#fff1f2',border:'#dc2626',text:'#991b1b',label:'PENDIENTE'},attention:{bg:'#fffbeb',border:'#d97706',text:'#92400e',label:'REQUIERE MI ATENCIÓN'},upcoming:{bg:'#f8fafc',border:'#94a3b8',text:'#475569',label:'PRÓXIMO / INFORMATIVO'}};
-
-  function ensureUI(){
-    if(document.getElementById('sirroPendingCard'))return true;
-    const inicio=document.getElementById('tab-inicio');if(!inicio)return false;
-    const card=document.createElement('article');card.id='sirroPendingCard';card.className='card';
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 style="margin:0">LO QUE TENGO PENDIENTE</h2><p class="muted" style="margin:6px 0 0">Rojo = pendiente/vencido · Amarillo = requiere mi atención.</p></div><button type="button" onclick="window.openSirroPending('all')">LO PENDIENTE · <span id="sirroPendingCount">0</span></button></div><div id="sirroPendingPreview" style="margin-top:10px"></div><div id="sirroPendingDetails" style="margin-top:12px"></div>`;
-    const flow=[...inicio.querySelectorAll(':scope > article.card')].find(x=>x.querySelector('h2')?.textContent?.includes('Flujo SIRRO'));
-    if(flow)inicio.insertBefore(card,flow);else inicio.appendChild(card);return true;
-  }
+  function ensureUI(){if(document.getElementById('sirroPendingCard'))return true;const inicio=document.getElementById('tab-inicio');if(!inicio)return false;const card=document.createElement('article');card.id='sirroPendingCard';card.className='card';card.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 style="margin:0">LO QUE TENGO PENDIENTE</h2><p class="muted" style="margin:6px 0 0">Rojo = pendiente/vencido · Amarillo = requiere mi atención.</p></div><button type="button" onclick="window.openSirroPending('all')">LO PENDIENTE · <span id="sirroPendingCount">0</span></button></div><div id="sirroPendingPreview" style="margin-top:10px"></div><div id="sirroPendingDetails" style="margin-top:12px"></div>`;const flow=[...inicio.querySelectorAll(':scope > article.card')].find(x=>x.querySelector('h2')?.textContent?.includes('Flujo SIRRO'));if(flow)inicio.insertBefore(card,flow);else inicio.appendChild(card);return true;}
   function homeButton(kind,count,label){const c=colors[kind];return `<button type="button" onclick="window.openSirroPending('${kind}')" style="background:${c.bg};border:2px solid ${c.border};color:${c.text};padding:12px 16px;border-radius:12px;font:inherit;font-weight:750;cursor:pointer">${count} ${label}</button>`;}
-  function renderHome(){
-    if(!ensureUI())return;const rows=buildActions(),box=document.getElementById('sirroPendingPreview'),count=document.getElementById('sirroPendingCount');if(!box)return;
-    if(count)count.textContent=rows.length;
-    if(!rows.length){box.innerHTML='<div class="notice ok"><strong>Sin pendientes.</strong> No tiene acciones pendientes en este momento.</div>';document.getElementById('sirroPendingDetails').innerHTML='';return;}
-    const red=rows.filter(x=>group(x)==='pending').length,yellow=rows.filter(x=>group(x)==='attention').length,other=rows.length-red-yellow;
-    box.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">${homeButton('pending',red,red===1?'PENDIENTE':'PENDIENTES')}${homeButton('attention',yellow,yellow===1?'REQUIERE MI ATENCIÓN':'REQUIEREN MI ATENCIÓN')}${other?homeButton('upcoming',other,other===1?'PRÓXIMO / AVISO':'PRÓXIMOS / AVISOS'):''}</div>`;
-  }
+  function renderHome(){if(!ensureUI())return;const rows=buildActions(),box=document.getElementById('sirroPendingPreview'),count=document.getElementById('sirroPendingCount');if(!box)return;if(count)count.textContent=rows.length;if(!rows.length){box.innerHTML='<div class="notice ok"><strong>Sin pendientes.</strong> No tiene acciones pendientes en este momento.</div>';document.getElementById('sirroPendingDetails').innerHTML='';return;}const red=rows.filter(x=>group(x)==='pending').length,yellow=rows.filter(x=>group(x)==='attention').length,other=rows.length-red-yellow;box.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">${homeButton('pending',red,red===1?'PENDIENTE':'PENDIENTES')}${homeButton('attention',yellow,yellow===1?'REQUIERE MI ATENCIÓN':'REQUIEREN MI ATENCIÓN')}${other?homeButton('upcoming',other,other===1?'PRÓXIMO / AVISO':'PRÓXIMOS / AVISOS'):''}</div>`;}
   function rowHtml(x,i){const c=colors[group(x)];return `<div style="padding:12px;margin:9px 0;border-radius:10px;background:${c.bg};border:2px solid ${c.border};color:${c.text}"><strong>${esc2(x.title)}</strong><br><small>${esc2(x.detail||'')}</small>${x.fecha?`<br><small>${esc2(safeFmt(x.fecha))}</small>`:''}<div class="actions"><button type="button" onclick="window.runSirroPendingAction(${i})">${esc2(x.button||'Abrir')}</button></div></div>`;}
-  window.openSirroPending=function(kind='all'){
-    const all=buildActions();activeRows=kind==='all'?all:all.filter(x=>group(x)===kind);
-    const box=document.getElementById('sirroPendingDetails');if(!box)return;
-    const title=kind==='pending'?'PENDIENTES / VENCIDOS':kind==='attention'?'REQUIERE MI ATENCIÓN':kind==='upcoming'?'PRÓXIMOS / INFORMATIVOS':'LO PENDIENTE';
-    box.innerHTML=`<div class="notice"><strong>${title}</strong></div>${activeRows.length?activeRows.map(rowHtml).join(''):'<div class="notice ok">No hay elementos en esta categoría.</div>'}`;
-    box.scrollIntoView({behavior:'smooth',block:'nearest'});
-  };
+  window.openSirroPending=function(kind='all'){const all=buildActions();activeRows=kind==='all'?all:all.filter(x=>group(x)===kind);const box=document.getElementById('sirroPendingDetails');if(!box)return;const title=kind==='pending'?'PENDIENTES / VENCIDOS':kind==='attention'?'REQUIERE MI ATENCIÓN':kind==='upcoming'?'PRÓXIMOS / INFORMATIVOS':'LO PENDIENTE';box.innerHTML=`<div class="notice"><strong>${title}</strong></div>${activeRows.length?activeRows.map(rowHtml).join(''):'<div class="notice ok">No hay elementos en esta categoría.</div>'}`;box.scrollIntoView({behavior:'smooth',block:'nearest'});};
   window.runSirroPendingAction=async function(i){const x=activeRows[Number(i)];if(!x)return;if(typeof x.run==='function')await x.run();};
-
-  const baseRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;
-  if(baseRefresh)window.refreshAll=async function(){await baseRefresh();await loadFollowups();renderHome();};
+  const baseRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;if(baseRefresh)window.refreshAll=async function(){await baseRefresh();await loadFollowups();renderHome();};
   async function start(){if(started)return;started=true;ensureUI();await loadFollowups();renderHome();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-  window.addEventListener('pageshow',()=>{ensureUI();renderHome();});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();window.addEventListener('pageshow',()=>{ensureUI();renderHome();});
 })();
