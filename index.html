@@ -72,8 +72,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 
 <section id="updatePasswordView" class="card narrow login-card hidden">
   <h2>Crear nueva contraseña</h2>
-  <label>Nueva contraseña<input id="recoveryPassword" type="password" minlength="8" autocomplete="new-password"></label>
-  <label>Confirmar contraseña<input id="recoveryPasswordConfirm" type="password" minlength="8" autocomplete="new-password"></label>
+  <label>Nueva contraseña<input id="recoveryPassword" type="password" minlength="12" autocomplete="new-password"></label>
+  <label>Confirmar contraseña<input id="recoveryPasswordConfirm" type="password" minlength="12" autocomplete="new-password"></label>
   <button id="updatePasswordBtn" type="button">Guardar nueva contraseña</button>
   <div id="updatePasswordMsg"></div>
 </section>
@@ -183,8 +183,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
       <form id="userForm" class="formgrid">
         <label>Nombre completo<input id="newName" required></label>
         <label>Usuario<input id="newUsername" required autocomplete="off"></label>
-        <label>Contraseña<input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></label>
-        <label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Contraseña<input id="newPassword" type="password" minlength="12" required autocomplete="new-password"></label>
+        <label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="12" required autocomplete="new-password"></label>
         <label>Identidad<input id="newIdentity" pattern="[0-9]{13}" minlength="13" maxlength="13" required></label>
         <label>Correo personal/institucional<input id="newEmail" type="email" required></label>
         <label>Teléfono<input id="newPhone" pattern="[0-9]{8}" minlength="8" maxlength="8" required></label>

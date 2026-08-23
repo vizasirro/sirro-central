@@ -123,7 +123,7 @@ function showPasswordRecovery(){
 }
 async function updateRecoveredPassword(){
   const p=$('#recoveryPassword').value, c=$('#recoveryPasswordConfirm').value;
-  if(p.length<8)return showMsg('#updatePasswordMsg','La contraseña debe tener al menos 8 caracteres.','error');
+  if(!(p.length>=12&&/[a-z]/.test(p)&&/[A-Z]/.test(p)&&/[0-9]/.test(p)&&/[^A-Za-z0-9]/.test(p)))return showMsg('#updatePasswordMsg','La contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo.','error');
   if(p!==c)return showMsg('#updatePasswordMsg','Las contraseñas no coinciden.','error');
   const {error}=await sb.auth.updateUser({password:p});
   if(error)return showMsg('#updatePasswordMsg','No se pudo actualizar la contraseña. Solicite un nuevo enlace.','error');
@@ -430,6 +430,8 @@ function userRoleUI(){
 }
 async function createUser(e){
   e.preventDefault(); showMsg('#userMsg','Creando usuario…');
+  const newPassword=$('#newPassword').value;
+  if(!(newPassword.length>=12&&/[a-z]/.test(newPassword)&&/[A-Z]/.test(newPassword)&&/[0-9]/.test(newPassword)&&/[^A-Za-z0-9]/.test(newPassword)))return showMsg('#userMsg','La contraseña debe tener al menos 12 caracteres e incluir mayúscula, minúscula, número y símbolo.','error');
   if($('#newPassword').value!==$('#confirmPassword').value)return showMsg('#userMsg','Las contraseñas no coinciden.','error');
   const body={username:$('#newUsername').value.trim(),password:$('#newPassword').value,profile:{
     nombre_completo:$('#newName').value.trim(),identidad:$('#newIdentity').value.trim(),correo:$('#newEmail').value.trim(),
