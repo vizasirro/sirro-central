@@ -78,3 +78,64 @@
   updateTestModeCopy();
   if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
+
+/* CANDADO SIRRO: Cloudflare Turnstile. La Site Key es pública; la Secret Key permanece solo en Supabase. */
+(() => {
+  const SITE_KEY='0x4AAAAAAEZUsW_95JDOEt40';
+  let captchaToken='';
+  let widgetId=null;
+
+  window.sirroTurnstileVerified=token=>{captchaToken=token||'';};
+  window.sirroTurnstileExpired=()=>{captchaToken='';};
+  window.sirroTurnstileError=()=>{captchaToken='';};
+
+  function resetCaptcha(){
+    captchaToken='';
+    try{if(window.turnstile&&widgetId!==null)window.turnstile.reset(widgetId);}catch{}
+  }
+
+  function mountCaptcha(){
+    const login=document.getElementById('loginView');
+    if(!login||document.getElementById('sirroTurnstile'))return;
+    const box=document.createElement('div');
+    box.id='sirroTurnstile';
+    box.style.cssText='display:flex;justify-content:center;margin:12px 0;min-height:65px';
+    const forgot=document.getElementById('forgotPasswordBtn');
+    login.insertBefore(box,forgot||document.getElementById('loginMsg'));
+
+    const render=()=>{
+      if(!window.turnstile)return;
+      widgetId=window.turnstile.render(box,{
+        sitekey:SITE_KEY,
+        callback:window.sirroTurnstileVerified,
+        'expired-callback':window.sirroTurnstileExpired,
+        'error-callback':window.sirroTurnstileError,
+        theme:'auto'
+      });
+    };
+    if(window.turnstile)return render();
+    const script=document.createElement('script');
+    script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async=true; script.defer=true; script.onload=render;
+    document.head.appendChild(script);
+  }
+
+  if(typeof sb!=='undefined'&&sb?.auth){
+    const originalSignIn=sb.auth.signInWithPassword.bind(sb.auth);
+    sb.auth.signInWithPassword=async credentials=>{
+      if(!captchaToken)return {data:{user:null,session:null},error:new Error('Complete la verificación de seguridad.')};
+      try{return await originalSignIn({...credentials,options:{...(credentials?.options||{}),captchaToken}});}
+      finally{resetCaptcha();}
+    };
+
+    const originalReset=sb.auth.resetPasswordForEmail.bind(sb.auth);
+    sb.auth.resetPasswordForEmail=async (email,options={})=>{
+      if(!captchaToken)throw new Error('Complete la verificación de seguridad.');
+      try{return await originalReset(email,{...options,captchaToken});}
+      finally{resetCaptcha();}
+    };
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountCaptcha,{once:true});
+  else mountCaptcha();
+})();
