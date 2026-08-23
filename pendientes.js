@@ -5,6 +5,16 @@
   const safeFmt=v=>v?fmt(v):'';
   const tramoById=id=>tramos.find(x=>x.id===id);
 
+  function showTab(name){
+    const b=document.querySelector(`#tabs button[data-tab="${name}"]`);
+    if(!b)return;
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.tabpane').forEach(x=>x.classList.add('hidden'));
+    document.getElementById(`tab-${name}`)?.classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
   async function loadPendientesFollowups(){
     try{pendientesFollowups=await fetchAll('seguimientos_postreferencia')}catch{pendientesFollowups=[]}
   }
@@ -29,7 +39,7 @@
     for(const t of tramos){
       const c=byCase(t.caso_id);
       if(profile?.establecimiento_id===t.establecimiento_destino_id){
-        if(t.estado_actual==='ENVIADO')out.push({rank:1,type:'accion',title:'Referencia por recibir',detail:`${c.codigo_visible||''} · ${c.paciente_nombre||''}`,action:()=>receiveTramo(t.id,'AMBULATORIO'),button:'Abrir recepción',tramo:t.id});
+        if(t.estado_actual==='ENVIADO')out.push({rank:1,type:'accion',title:'Referencia por recibir',detail:`${c.codigo_visible||''} · ${c.paciente_nombre||''}`,action:()=>showTab('recibidas'),button:'Abrir referencia',tramo:t.id});
         if(t.estado_actual==='EN_ATENCION')out.push({rank:2,type:'accion',title:'Evaluación pendiente',detail:`${c.codigo_visible||''} · ${c.paciente_nombre||''}`,action:()=>evaluateTramo(t.id),button:'Registrar evaluación',tramo:t.id});
         if(['EVALUADO','HOSPITALIZADO'].includes(t.estado_actual))out.push({rank:1,type:'accion',title:'Respuesta / contrarreferencia pendiente',detail:`${c.codigo_visible||''} · ${c.paciente_nombre||''}`,action:()=>answerTramo(t.id),button:'Responder',tramo:t.id});
       }
