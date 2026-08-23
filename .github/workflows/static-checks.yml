@@ -1,0 +1,37 @@
+name: SIRRO static checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax-and-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check sirro-core.js
+          node --check followup.js
+          node --check pendientes.js
+          node --check reportes.js
+          node --check admin-pruebas.js
+          node --check sw.js
+      - name: Protect retired RPCs from new frontend use
+        shell: bash
+        run: |
+          set -e
+          if grep -RInE "sb\.rpc\('(crear_referencia|sirro_enviar_respuesta|actualizar_mis_preferencias)'" --include='*.js' --include='*.html' .; then
+            echo 'Se detectó uso nuevo de una RPC retirada.'
+            exit 1
+          fi
+      - name: Protect clinical constants
+        shell: bash
+        run: |
+          grep -q "America/Tegucigalpa" sirro-core.js
+          grep -q "desdeHoras: 48" sirro-core.js
+          grep -q "hastaHoras: 72" sirro-core.js
+          grep -q "desdeDias: 3" sirro-core.js
+          grep -q "hastaDias: 7" sirro-core.js
+          grep -q "dia: 40" sirro-core.js
