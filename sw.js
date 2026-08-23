@@ -1,4 +1,4 @@
-const CACHE='sirro-v038';
+const CACHE='sirro-v039';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js'];
 
 self.addEventListener('install',e=>{
