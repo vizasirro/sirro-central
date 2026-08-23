@@ -50,10 +50,23 @@
   });
 
   window.SIRRO = Object.freeze({
-    version: 'core-1',
+    version: 'core-2',
     constants: Object.freeze({ ROLES, TZ, PUERPERIO }),
     api,
     errors,
     authz
   });
+
+  function loadModule(src, marker) {
+    if (window[marker] || document.querySelector(`script[src="${src}"]`)) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = false;
+    script.dataset.sirroModule = marker;
+    script.onerror = () => console.error(`No se pudo cargar el módulo ${src}`);
+    document.head.appendChild(script);
+  }
+
+  loadModule('./auth-security.js', 'SIRRO_AUTH_SECURITY');
+  loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
 })();
