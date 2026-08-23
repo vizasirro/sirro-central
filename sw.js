@@ -1,5 +1,5 @@
-const CACHE='sirro-v039';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js'];
+const CACHE='sirro-v040';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
