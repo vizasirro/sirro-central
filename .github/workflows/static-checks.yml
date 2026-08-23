@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
         run: |
+          node --check app-main.js
           node --check sirro-core.js
           node --check followup.js
           node --check pendientes.js
@@ -35,3 +36,8 @@ jobs:
           grep -q "desdeDias: 3" sirro-core.js
           grep -q "hastaDias: 7" sirro-core.js
           grep -q "dia: 40" sirro-core.js
+      - name: Require pinned Supabase browser SDK
+        shell: bash
+        run: |
+          grep -q '@supabase/supabase-js@2.112.3' index.html
+          ! grep -q '@supabase/supabase-js@2"' index.html
