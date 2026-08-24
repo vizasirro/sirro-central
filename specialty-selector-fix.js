@@ -135,15 +135,27 @@
       const actions=[...box.querySelectorAll('.actions')];
       const fields=actions.find(a=>a.querySelector('input[type="date"]')&&a.querySelector('input[type="time"]'));
       if(fields){
-        fields.style.display='grid';fields.style.gridTemplateColumns='minmax(0,1fr) minmax(0,1fr)';fields.style.gap='12px';fields.style.alignItems='end';
-        fields.querySelectorAll('label').forEach(l=>{l.style.display='block';l.style.width='100%';l.style.minWidth='0';});
+        fields.style.display='grid';
+        fields.style.gridTemplateColumns='minmax(0,1fr) minmax(0,1fr)';
+        fields.style.columnGap='36px';
+        fields.style.rowGap='12px';
+        fields.style.alignItems='end';
+        fields.style.width='100%';
+        fields.querySelectorAll('label').forEach(l=>{l.style.display='block';l.style.width='100%';l.style.minWidth='0';l.style.margin='8px 0';});
+        fields.querySelectorAll('input[type="date"],input[type="time"]').forEach(input=>{
+          input.style.width='100%';
+          input.style.background='#fff';
+          input.style.border='2px solid #b9cbc5';
+          input.style.borderRadius='10px';
+          input.style.minHeight='52px';
+        });
         const now=[...fields.querySelectorAll('button')].find(b=>b.textContent.includes('Usar fecha y hora actual'));
         if(now){now.style.gridColumn='1 / -1';now.style.justifySelf='start';now.style.marginTop='2px';}
       }
     });
   }
   const style=document.createElement('style');
-  style.textContent='@media(max-width:560px){.sirro-delivery-only .actions:has(input[type="date"]){grid-template-columns:1fr!important}}';
+  style.textContent='@media(max-width:620px){.notice .actions:has(input[type="date"]):has(input[type="time"]){grid-template-columns:1fr!important;column-gap:0!important;row-gap:14px!important}.notice .actions:has(input[type="date"]):has(input[type="time"]) button{grid-column:1!important}}';
   document.head.appendChild(style);
   const observer=new MutationObserver(()=>{clearTimeout(window.__sirroAuxDeliveryTimer);window.__sirroAuxDeliveryTimer=setTimeout(applyDeliveryLayout,40);});
   observer.observe(document.body,{childList:true,subtree:true});applyDeliveryLayout();
