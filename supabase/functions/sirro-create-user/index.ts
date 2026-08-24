@@ -5,6 +5,14 @@ const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Heade
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
 const usernameToAuthEmail=(username:string)=>{const u=username.trim().toLowerCase();if(u.includes("@")) return u;return `${u.replace(/[^a-z0-9._+-]/g,"_")}@users.sirro.net`;};
 const strongPassword=(v:string)=>v.length>=12&&/[a-z]/.test(v)&&/[A-Z]/.test(v)&&/[0-9]/.test(v)&&/[^A-Za-z0-9]/.test(v);
+const digits=(v:unknown)=>String(v??"").replace(/\D/g,"");
+const friendlyError=(e:unknown)=>{
+  const raw=e instanceof Error?e.message:String(e||"");
+  if(/DNI ya pertenece|identidad.*ya pertenece|ux_perfiles_identidad/i.test(raw)) return "Este DNI ya está registrado. Verifique la identidad de la persona y utilice el registro existente.";
+  if(/número de celular ya está asociado|telefono|teléfono/i.test(raw)&&/otra persona|duplicate|unique/i.test(raw)) return "Este número de celular ya está asociado a otra persona. Verifique el número antes de continuar.";
+  if(/permission denied for function sirro_solo_digitos/i.test(raw)) return "No fue posible validar DNI y celular. Intente nuevamente; si persiste, contacte al Administrador Regional.";
+  return raw||"No se pudo crear el usuario.";
+};
 
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:corsHeaders});
@@ -37,6 +45,14 @@ Deno.serve(async(req)=>{
     const allowed=new Set(["ADMIN_REGIONAL","ECOR","JEFE_MUNICIPAL","USUARIO_US","USUARIO_HOSPITAL","AUDITOR_CONSULTA"]);
     if(!allowed.has(String(p.rol||""))) throw new Error("Rol inválido");
 
+    const dni=digits(p.identidad), tel=digits(p.telefono);
+    const {data:existingDni}=await adminClient.from("perfiles").select("id,nombre_completo").eq("identidad",dni).maybeSingle();
+    if(existingDni) return json({error:"Este DNI ya está registrado. Verifique la identidad de la persona y utilice el registro existente."});
+    const {data:telProfiles}=await adminClient.from("perfiles").select("id,identidad,nombre_completo").eq("telefono",tel).limit(1);
+    if((telProfiles||[]).some(x=>digits(x.identidad)!==dni)) return json({error:"Este número de celular ya está asociado a otra persona. Verifique el número antes de continuar."});
+    const {data:telCases}=await adminClient.from("casos_referencia").select("id,paciente_identidad,paciente_nombre").eq("paciente_contacto",tel).limit(10);
+    if((telCases||[]).some(x=>digits(x.paciente_identidad)!==dni)) return json({error:"Este número de celular ya está asociado a otra persona. Verifique el número antes de continuar."});
+
     const {data:existingUsername}=await adminClient.from("sirro_app_users").select("auth_user_id").eq("username",username.toLowerCase()).maybeSingle();
     if(existingUsername) throw new Error("Ese nombre de usuario ya existe");
 
@@ -65,7 +81,7 @@ Deno.serve(async(req)=>{
     if(createErr||!created.user){if(createErr?.message?.toLowerCase().includes("already")) throw new Error("Ese nombre de usuario ya existe");throw createErr||new Error("No se pudo crear el usuario");}
     const uid=created.user.id;
     try{
-      const perfil:any={id:uid,nombre_completo:String(p.nombre_completo).trim(),identidad:String(p.identidad).trim(),correo:String(p.correo).trim().toLowerCase(),telefono:String(p.telefono).trim(),cargo_funcion:String(p.cargo_funcion).trim(),rol:p.rol,estado:"ACTIVO",ecor_id:null,municipio_id:null,establecimiento_id:null,notificaciones_activas:p.notificaciones_activas!==false,creado_por:actor.id};
+      const perfil:any={id:uid,nombre_completo:String(p.nombre_completo).trim(),identidad:dni,correo:String(p.correo).trim().toLowerCase(),telefono:tel,cargo_funcion:String(p.cargo_funcion).trim(),rol:p.rol,estado:"ACTIVO",ecor_id:null,municipio_id:null,establecimiento_id:null,notificaciones_activas:p.notificaciones_activas!==false,creado_por:actor.id};
       if(p.rol==="ECOR") perfil.ecor_id=p.ecor_id;
       if(p.rol==="JEFE_MUNICIPAL") perfil.municipio_id=p.municipio_id;
       if(p.rol==="USUARIO_US"){perfil.ecor_id=est.ecor_id;perfil.municipio_id=est.municipio_id;perfil.establecimiento_id=p.establecimiento_id;}
@@ -84,5 +100,5 @@ Deno.serve(async(req)=>{
       await adminClient.auth.admin.deleteUser(uid);
       throw inner;
     }
-  }catch(e){return json({error:e instanceof Error?e.message:String(e)},400);}
+  }catch(e){return json({error:friendlyError(e)});}
 });
