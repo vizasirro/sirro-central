@@ -34,3 +34,10 @@
 .rr-stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:14px}.rr-stats article{margin-bottom:0}.rr-stats article small{display:block;margin-top:4px;color:#607a74;font-weight:700}.rr-rate{text-align:right}.rr-rate strong{display:block;font-size:1.5rem}.rr-rate span{font-size:.75rem;font-weight:800}.rr-hospital .monitor-metrics{margin-top:10px}.rr-filters{margin-top:12px}@media(max-width:700px){.rr-rate{text-align:left}}
 
 .test-banner{position:sticky;top:0;z-index:50;text-align:center;font-weight:800;padding:.55rem 1rem;background:#fff3cd;border-bottom:1px solid #d6b656;color:#5b4700;letter-spacing:.02em}
+
+/* Registro obstétrico: fecha y hora deben percibirse como campos independientes. */
+.notice:has(input[type="date"]):has(input[type="time"]) .actions:has(input[type="date"]):has(input[type="time"]){display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;column-gap:28px!important;row-gap:12px!important;align-items:end!important}
+.notice:has(input[type="date"]):has(input[type="time"]) .actions:has(input[type="date"]):has(input[type="time"]) label{display:block!important;width:100%!important;min-width:0!important;margin:8px 0!important}
+.notice:has(input[type="date"]):has(input[type="time"]) input[type="date"],.notice:has(input[type="date"]):has(input[type="time"]) input[type="time"]{background:#fff!important;border:2px solid #b9cbc5!important;border-radius:10px!important;min-height:52px!important}
+.notice:has(input[type="date"]):has(input[type="time"]) .actions:has(input[type="date"]):has(input[type="time"]) button{grid-column:1/-1!important;justify-self:start!important;margin-top:2px!important}
+@media(max-width:620px){.notice:has(input[type="date"]):has(input[type="time"]) .actions:has(input[type="date"]):has(input[type="time"]){grid-template-columns:1fr!important;row-gap:14px!important}.notice:has(input[type="date"]):has(input[type="time"]) .actions:has(input[type="date"]):has(input[type="time"]) button{grid-column:1!important}}
