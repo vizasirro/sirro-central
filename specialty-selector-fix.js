@@ -221,3 +221,51 @@
 
   if(typeof renderReceived==='function')renderReceived();
 })();
+
+/* Resiliencia de red: evita exponer errores técnicos como "TypeError: Load failed" al usuario. */
+(() => {
+  const originalAlert=window.alert.bind(window);
+  const isNetworkError=v=>/load failed|failed to fetch|networkerror|network request failed|fetch failed|typeerror.*fetch|typeerror.*load/i.test(String(v||''));
+  let networkNoticeShown=false;
+
+  function showNetworkNotice(){
+    if(networkNoticeShown)return;
+    networkNoticeShown=true;
+    originalAlert('No fue posible completar la comunicación con SIRRO. Verifique la conexión y pulse Actualizar. No repita una acción clínica hasta confirmar en pantalla si el estado cambió.');
+    setTimeout(()=>{networkNoticeShown=false;},800);
+  }
+
+  function wrapAction(name){
+    const original=window[name];
+    if(typeof original!=='function'||original.__sirroNetworkGuard)return;
+    const wrapped=async function(...args){
+      let intercepted=false;
+      const savedAlert=window.alert;
+      window.alert=function(message){
+        if(isNetworkError(message)){intercepted=true;return;}
+        return savedAlert(message);
+      };
+      try{
+        return await original.apply(this,args);
+      }catch(error){
+        if(isNetworkError(error?.message||error)){intercepted=true;return;}
+        throw error;
+      }finally{
+        window.alert=savedAlert;
+        if(intercepted)showNetworkNotice();
+      }
+    };
+    wrapped.__sirroNetworkGuard=true;
+    window[name]=wrapped;
+  }
+
+  ['receiveTramo','evaluateTramo','rejectTramo','answerTramo','secondaryTramo','reorientTramo','markNotificationRead','closeTramo','registerDelivery','completePuerperal','assignCeAppointment','saveCeDateTime'].forEach(wrapAction);
+
+  window.addEventListener('unhandledrejection',event=>{
+    const reason=event?.reason;
+    if(isNetworkError(reason?.message||reason)){
+      event.preventDefault();
+      showNetworkNotice();
+    }
+  });
+})();
