@@ -77,12 +77,26 @@
 
   // Regla de asignación: un Usuario de Hospital solo puede pertenecer a
   // hospitales internos de Olancho; un Usuario de Establecimiento no puede
-  // asignarse a un hospital ni a un establecimiento externo.
+  // asignarse a un hospital ni a un establecimiento externo. Además, un
+  // Jefe Municipal solo puede asignarse a un municipio perteneciente al ECOR
+  // seleccionado. La validación se aplica tanto en la interfaz como al enviar.
   const isInternalHospital=f=>f?.tipo==='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalNonHospital=f=>f?.tipo!=='HOSPITAL'&&f?.es_externo_olancho!==true;
+  const isInternalFacility=f=>f?.es_externo_olancho!==true;
 
-  function syncHospitalMunicipios(){
+  function municipiosForEcor(ecorId){
+    if(!ecorId||typeof establishments==='undefined'||typeof municipios==='undefined')return [];
+    const ids=new Set(
+      establishments
+        .filter(x=>isInternalFacility(x)&&x.ecor_id===ecorId&&x.municipio_id)
+        .map(x=>x.municipio_id)
+    );
+    return municipios.filter(x=>ids.has(x.id));
+  }
+
+  function syncUserMunicipios(){
     const role=document.getElementById('newRole')?.value||'';
+    const ecorId=document.getElementById('newEcor')?.value||'';
     const sel=document.getElementById('newMunicipio');
     if(!sel||typeof municipios==='undefined'||typeof establishments==='undefined')return;
     const previous=sel.value;
@@ -95,6 +109,18 @@
       return;
     }
 
+    if(role==='JEFE_MUNICIPAL'){
+      const options=municipiosForEcor(ecorId);
+      const placeholder=ecorId
+        ?(options.length?'Seleccione municipio del ECOR':'No hay municipios asignados a este ECOR')
+        :'Seleccione primero un ECOR';
+      sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+      sel.value=options.some(x=>x.id===previous)?previous:'';
+      sel.disabled=!ecorId||!options.length;
+      return;
+    }
+
+    sel.disabled=false;
     sel.innerHTML='<option value="">Seleccione municipio</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
     if(municipios.some(x=>x.id===previous))sel.value=previous;
   }
@@ -134,11 +160,17 @@
   }
 
   const roleSelect=document.getElementById('newRole');
+  const ecorSelect=document.getElementById('newEcor');
   const municipioSelect=document.getElementById('newMunicipio');
   const scopeSelect=document.getElementById('newScope');
   if(roleSelect)roleSelect.addEventListener('change',()=>{
     const sel=document.getElementById('newEst'); if(sel)sel.value='';
-    syncHospitalMunicipios();
+    syncUserMunicipios();
+    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
+  });
+  if(ecorSelect)ecorSelect.addEventListener('change',()=>{
+    const sel=document.getElementById('newEst'); if(sel)sel.value='';
+    syncUserMunicipios();
     if(typeof fillUserEstablishments==='function')fillUserEstablishments();
   });
   if(municipioSelect)municipioSelect.addEventListener('change',()=>{
@@ -151,8 +183,19 @@
   const userForm=document.getElementById('userForm');
   if(userForm)userForm.addEventListener('submit',e=>{
     const role=document.getElementById('newRole')?.value;
+    const ecorId=document.getElementById('newEcor')?.value||'';
     const municipioId=document.getElementById('newMunicipio')?.value||'';
     const facilityId=document.getElementById('newEst')?.value;
+
+    if(role==='JEFE_MUNICIPAL'){
+      const validMunicipio=municipiosForEcor(ecorId).some(x=>x.id===municipioId);
+      if(validMunicipio)return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showMsg('#userMsg','Seleccione primero el ECOR y luego un municipio que pertenezca a ese ECOR.','error');
+      return;
+    }
+
     if(!['USUARIO_HOSPITAL','USUARIO_US'].includes(role))return;
     const facility=typeof establishments!=='undefined'?establishments.find(x=>x.id===facilityId):null;
     const valid=role==='USUARIO_HOSPITAL'
@@ -164,7 +207,7 @@
     showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
   },true);
 
-  syncHospitalMunicipios();
+  syncUserMunicipios();
   updateTestModeCopy();
   if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
