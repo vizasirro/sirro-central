@@ -81,6 +81,24 @@
   const isInternalHospital=f=>f?.tipo==='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalNonHospital=f=>f?.tipo!=='HOSPITAL'&&f?.es_externo_olancho!==true;
 
+  function syncHospitalMunicipios(){
+    const role=document.getElementById('newRole')?.value||'';
+    const sel=document.getElementById('newMunicipio');
+    if(!sel||typeof municipios==='undefined'||typeof establishments==='undefined')return;
+    const previous=sel.value;
+
+    if(role==='USUARIO_HOSPITAL'){
+      const hospitalMunicipioIds=new Set(establishments.filter(isInternalHospital).map(x=>x.municipio_id).filter(Boolean));
+      const options=municipios.filter(x=>hospitalMunicipioIds.has(x.id));
+      sel.innerHTML='<option value="">Seleccione municipio del hospital</option>'+options.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+      sel.value=options.some(x=>x.id===previous)?previous:'';
+      return;
+    }
+
+    sel.innerHTML='<option value="">Seleccione municipio</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+    if(municipios.some(x=>x.id===previous))sel.value=previous;
+  }
+
   if(typeof fillUserEstablishments==='function'){
     fillUserEstablishments=function(){
       const role=document.getElementById('newRole')?.value||'';
@@ -93,10 +111,9 @@
       let disabled=true;
 
       if(role==='USUARIO_HOSPITAL'){
-        options=establishments.filter(isInternalHospital);
-        if(municipioId)options=options.filter(x=>x.municipio_id===municipioId);
-        placeholder=options.length?'Seleccione hospital':(municipioId?'No hay hospital en este municipio':'No hay hospitales disponibles');
-        disabled=false;
+        options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalHospital(x)):[];
+        placeholder=municipioId?(options.length?'Seleccione hospital':'No hay hospital autorizado en este municipio'):'Seleccione primero un municipio';
+        disabled=!municipioId||!options.length;
       }else if(role==='USUARIO_US'){
         options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalNonHospital(x)):[];
         placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
@@ -112,6 +129,7 @@
 
       sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
       sel.disabled=disabled;
+      if(role==='USUARIO_HOSPITAL'&&options.length===1)sel.value=options[0].id;
     };
   }
 
@@ -120,6 +138,7 @@
   const scopeSelect=document.getElementById('newScope');
   if(roleSelect)roleSelect.addEventListener('change',()=>{
     const sel=document.getElementById('newEst'); if(sel)sel.value='';
+    syncHospitalMunicipios();
     if(typeof fillUserEstablishments==='function')fillUserEstablishments();
   });
   if(municipioSelect)municipioSelect.addEventListener('change',()=>{
@@ -132,16 +151,20 @@
   const userForm=document.getElementById('userForm');
   if(userForm)userForm.addEventListener('submit',e=>{
     const role=document.getElementById('newRole')?.value;
+    const municipioId=document.getElementById('newMunicipio')?.value||'';
     const facilityId=document.getElementById('newEst')?.value;
     if(!['USUARIO_HOSPITAL','USUARIO_US'].includes(role))return;
     const facility=typeof establishments!=='undefined'?establishments.find(x=>x.id===facilityId):null;
-    const valid=role==='USUARIO_HOSPITAL'?isInternalHospital(facility):isInternalNonHospital(facility);
+    const valid=role==='USUARIO_HOSPITAL'
+      ?isInternalHospital(facility)&&!!municipioId&&facility?.municipio_id===municipioId
+      :isInternalNonHospital(facility);
     if(valid)return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione uno de los hospitales autorizados de Olancho.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
+    showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
   },true);
 
+  syncHospitalMunicipios();
   updateTestModeCopy();
   if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
