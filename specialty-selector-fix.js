@@ -70,8 +70,12 @@
 /* Regla de oro obstétrica: la auxiliar hospitalaria únicamente registra fecha y hora del parto,
    y solo después de que la paciente haya sido recibida como HOSPITALIZADA. */
 (() => {
-  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-  const isAuxiliar=()=>profile?.rol==='USUARIO_HOSPITAL'&&norm(profile?.cargo_funcion).includes('AUXILIAR')&&norm(profile?.cargo_funcion).includes('ENFERMER');
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const isAuxiliar=()=>{
+    if(profile?.rol!=='USUARIO_HOSPITAL')return false;
+    const cargo=norm(profile?.cargo_funcion);
+    return cargo==='AE'||cargo==='A.E.'||cargo==='AUX ENFERMERIA'||cargo==='AUX. ENFERMERIA'||(cargo.includes('AUXILIAR')&&cargo.includes('ENFERMER'));
+  };
   const deny=()=>alert('Este perfil de Auxiliar de Enfermería únicamente puede registrar la fecha y la hora del parto de una paciente ya hospitalizada.');
 
   function guardAction(name){
@@ -119,7 +123,13 @@
     tramoItem=function(t,withActions=true){return cleanTramoHtml(t,previousTramoItem(t,withActions));};
   }
 
+  function applyAuxiliarNavigation(){
+    if(!isAuxiliar())return;
+    ['nueva','seguimiento','monitoreo'].forEach(name=>document.querySelector(`#tabs button[data-tab="${name}"]`)?.classList.add('hidden'));
+  }
+
   function applyDeliveryLayout(){
+    applyAuxiliarNavigation();
     document.querySelectorAll('.notice').forEach(box=>{
       if(box.querySelector(':scope > strong')?.textContent.trim()!=='Fecha y hora del parto')return;
       const actions=[...box.querySelectorAll('.actions')];
