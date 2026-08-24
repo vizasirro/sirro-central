@@ -75,6 +75,73 @@
     if(btn)btn.onclick=resetAllTestData;
   }
 
+  // Regla de asignación: un Usuario de Hospital solo puede pertenecer a
+  // hospitales internos de Olancho; un Usuario de Establecimiento no puede
+  // asignarse a un hospital ni a un establecimiento externo.
+  const isInternalHospital=f=>f?.tipo==='HOSPITAL'&&f?.es_externo_olancho!==true;
+  const isInternalNonHospital=f=>f?.tipo!=='HOSPITAL'&&f?.es_externo_olancho!==true;
+
+  if(typeof fillUserEstablishments==='function'){
+    fillUserEstablishments=function(){
+      const role=document.getElementById('newRole')?.value||'';
+      const municipioId=document.getElementById('newMunicipio')?.value||'';
+      const sel=document.getElementById('newEst');
+      if(!sel||typeof establishments==='undefined')return;
+
+      let options=[];
+      let placeholder='Seleccione primero un municipio';
+      let disabled=true;
+
+      if(role==='USUARIO_HOSPITAL'){
+        options=establishments.filter(isInternalHospital);
+        if(municipioId)options=options.filter(x=>x.municipio_id===municipioId);
+        placeholder=options.length?'Seleccione hospital':(municipioId?'No hay hospital en este municipio':'No hay hospitales disponibles');
+        disabled=false;
+      }else if(role==='USUARIO_US'){
+        options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalNonHospital(x)):[];
+        placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
+        disabled=!municipioId;
+      }else{
+        const guestEstablishment=role==='AUDITOR_CONSULTA'&&document.getElementById('newScope')?.value==='ESTABLECIMIENTO';
+        if(guestEstablishment){
+          options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&x.es_externo_olancho!==true):[];
+          placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
+          disabled=!municipioId;
+        }
+      }
+
+      sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
+      sel.disabled=disabled;
+    };
+  }
+
+  const roleSelect=document.getElementById('newRole');
+  const municipioSelect=document.getElementById('newMunicipio');
+  const scopeSelect=document.getElementById('newScope');
+  if(roleSelect)roleSelect.addEventListener('change',()=>{
+    const sel=document.getElementById('newEst'); if(sel)sel.value='';
+    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
+  });
+  if(municipioSelect)municipioSelect.addEventListener('change',()=>{
+    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
+  });
+  if(scopeSelect)scopeSelect.addEventListener('change',()=>{
+    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
+  });
+
+  const userForm=document.getElementById('userForm');
+  if(userForm)userForm.addEventListener('submit',e=>{
+    const role=document.getElementById('newRole')?.value;
+    const facilityId=document.getElementById('newEst')?.value;
+    if(!['USUARIO_HOSPITAL','USUARIO_US'].includes(role))return;
+    const facility=typeof establishments!=='undefined'?establishments.find(x=>x.id===facilityId):null;
+    const valid=role==='USUARIO_HOSPITAL'?isInternalHospital(facility):isInternalNonHospital(facility);
+    if(valid)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione uno de los hospitales autorizados de Olancho.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
+  },true);
+
   updateTestModeCopy();
   if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
