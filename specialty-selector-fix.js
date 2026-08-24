@@ -55,6 +55,13 @@
           try{await window.editUser(u.id);}finally{window.prompt=originalPrompt;}
         };
       });
+      // El Administrador Regional no gestiona el restablecimiento de su propia cuenta.
+      // Para su acceso personal utiliza el flujo ¿Olvidaste tu contraseña? del inicio de sesión.
+      const ownId=profile?.id||profile?.usuario_id||profile?.user_id;
+      if(ownId){
+        const ownReset=list.querySelector(`[data-reset-user="${ownId}"]`);
+        if(ownReset)ownReset.remove();
+      }
     };
   }
 
