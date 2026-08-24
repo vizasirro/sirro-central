@@ -148,3 +148,76 @@
   const observer=new MutationObserver(()=>{clearTimeout(window.__sirroAuxDeliveryTimer);window.__sirroAuxDeliveryTimer=setTimeout(applyDeliveryLayout,40);});
   observer.observe(document.body,{childList:true,subtree:true});applyDeliveryLayout();
 })();
+
+/* Identificación primaria del paciente: ID primero, Código SIRRO como apoyo y trazabilidad. */
+(() => {
+  const isHospital=()=>typeof profile!=='undefined'&&profile?.rol==='USUARIO_HOSPITAL';
+  const patientCase=t=>typeof caseOf==='function'?caseOf(t?.caso_id):null;
+  const normalize=v=>String(v||'').trim().toLowerCase();
+
+  function identityFirstHtml(t,html){
+    if(!html)return html;
+    const c=patientCase(t);if(!c)return html;
+    const root=document.createElement('div');root.innerHTML=html;
+    const item=root.querySelector('.item');if(!item)return html;
+    item.dataset.patientId=String(c.paciente_identidad||'');
+    item.dataset.sirroCode=String(c.codigo_visible||'');
+    item.dataset.patientName=String(c.paciente_nombre||'');
+    const main=item.querySelector('.row > div');
+    if(main){
+      const route=main.querySelector('small')?.outerHTML||'';
+      main.innerHTML=`<div class="sirro-primary-id"><strong>ID:</strong> <strong>${esc(c.paciente_identidad||'Sin ID')}</strong></div><div><strong>Paciente:</strong> ${esc(c.paciente_nombre||'')}</div><div class="muted"><strong>Código SIRRO:</strong> ${esc(c.codigo_visible||'')}</div>${route}`;
+    }
+    return root.innerHTML;
+  }
+
+  const previousTramoItem=typeof tramoItem==='function'?tramoItem:null;
+  if(previousTramoItem){
+    tramoItem=function(t,withActions=true){return identityFirstHtml(t,previousTramoItem(t,withActions));};
+  }
+
+  function ensureHospitalSearch(){
+    const list=document.getElementById('receivedList');
+    if(!list||!isHospital())return;
+    let box=document.getElementById('hospitalPatientSearchBox');
+    if(!box){
+      box=document.createElement('div');box.id='hospitalPatientSearchBox';box.className='readonlybox';box.style.marginBottom='12px';
+      box.innerHTML='<label style="margin:0"><strong>Buscar por ID / número de identidad</strong><input id="hospitalPatientSearch" inputmode="numeric" autocomplete="off" placeholder="Escriba el ID del paciente"></label><div class="hint" style="margin-top:6px">Búsqueda principal por ID. También puede buscar por Código SIRRO como alternativa.</div>';
+      list.parentElement?.insertBefore(box,list);
+      box.querySelector('#hospitalPatientSearch')?.addEventListener('input',filterHospitalReceived);
+    }
+  }
+
+  function filterHospitalReceived(){
+    const q=normalize(document.getElementById('hospitalPatientSearch')?.value);
+    const list=document.getElementById('receivedList');if(!list)return;
+    list.querySelectorAll(':scope > .item').forEach(item=>{
+      const id=normalize(item.dataset.patientId),code=normalize(item.dataset.sirroCode);
+      item.style.display=!q||id.includes(q)||code.includes(q)?'':'none';
+    });
+  }
+
+  const previousRenderReceived=typeof renderReceived==='function'?renderReceived:null;
+  if(previousRenderReceived){
+    renderReceived=function(){
+      previousRenderReceived();
+      ensureHospitalSearch();
+      filterHospitalReceived();
+    };
+  }
+
+  const previousRenderTracking=typeof renderTracking==='function'?renderTracking:null;
+  if(previousRenderTracking){
+    renderTracking=function(){
+      const search=document.getElementById('searchRef');
+      if(search&&isHospital())search.placeholder='Buscar por ID / identidad (también Código SIRRO o paciente)';
+      previousRenderTracking();
+    };
+  }
+
+  const css=document.createElement('style');
+  css.textContent='.sirro-primary-id{font-size:1.04em;margin-bottom:2px}.sirro-primary-id strong:first-child{letter-spacing:.02em}';
+  document.head.appendChild(css);
+
+  if(typeof renderReceived==='function')renderReceived();
+})();
