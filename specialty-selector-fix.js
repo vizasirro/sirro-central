@@ -55,8 +55,6 @@
           try{await window.editUser(u.id);}finally{window.prompt=originalPrompt;}
         };
       });
-      // El Administrador Regional no gestiona el restablecimiento de su propia cuenta.
-      // Para su acceso personal utiliza el flujo ¿Olvidaste tu contraseña? del inicio de sesión.
       const ownId=profile?.id||profile?.usuario_id||profile?.user_id;
       if(ownId){
         const ownReset=list.querySelector(`[data-reset-user="${ownId}"]`);
@@ -67,4 +65,76 @@
 
   upgradeCreateSpecialtyField();
   if(typeof profile!=='undefined'&&profile?.rol==='ADMIN_REGIONAL'&&typeof renderUsers==='function')renderUsers();
+})();
+
+/* Regla de oro obstétrica: la auxiliar hospitalaria únicamente registra fecha y hora del parto,
+   y solo después de que la paciente haya sido recibida como HOSPITALIZADA. */
+(() => {
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  const isAuxiliar=()=>profile?.rol==='USUARIO_HOSPITAL'&&norm(profile?.cargo_funcion).includes('AUXILIAR')&&norm(profile?.cargo_funcion).includes('ENFERMER');
+  const deny=()=>alert('Este perfil de Auxiliar de Enfermería únicamente puede registrar la fecha y la hora del parto de una paciente ya hospitalizada.');
+
+  function guardAction(name){
+    const original=window[name];
+    if(typeof original!=='function'||original.__sirroAuxGuard)return;
+    const wrapped=async function(...args){if(isAuxiliar())return deny();return original.apply(this,args);};
+    wrapped.__sirroAuxGuard=true;window[name]=wrapped;
+  }
+  ['receiveTramo','rejectTramo','evaluateTramo','answerTramo','secondaryTramo','closeTramo','reorientTramo','completePuerperal','assignCeAppointment'].forEach(guardAction);
+
+  const originalRegister=window.registerDelivery;
+  if(typeof originalRegister==='function'){
+    window.registerDelivery=async function(id){
+      const t=Array.isArray(tramos)?tramos.find(x=>String(x.id)===String(id)):null;
+      if(!t||t.estado_actual!=='HOSPITALIZADO')return alert('La fecha y hora del parto solo pueden registrarse después de que la paciente haya sido recibida como hospitalizada.');
+      return originalRegister.apply(this,arguments);
+    };
+  }
+
+  function cleanTramoHtml(t,html){
+    if(!html)return html;
+    const root=document.createElement('div');root.innerHTML=html;
+    const delivery=[...root.querySelectorAll('.notice')].find(x=>x.querySelector(':scope > strong')?.textContent.trim()==='Fecha y hora del parto');
+    if(delivery&&t?.estado_actual!=='HOSPITALIZADO')delivery.remove();
+    if(isAuxiliar()){
+      root.querySelectorAll('.actions button').forEach(btn=>{
+        const oc=btn.getAttribute('onclick')||'';
+        if(!oc.includes('registerDelivery')&&!oc.includes('setNowClinical'))btn.remove();
+      });
+      root.querySelectorAll('.notice').forEach(box=>{
+        const title=box.querySelector(':scope > strong')?.textContent.trim()||'';
+        if(/^Control puerperal\s+\d+/.test(title))box.remove();
+      });
+      if(delivery&&t?.estado_actual==='HOSPITALIZADO'){
+        delivery.classList.add('sirro-delivery-only');
+        const hint=delivery.querySelector('small');
+        if(hint)hint.textContent='Auxiliar de Enfermería: únicamente registre la fecha y la hora del parto.';
+      }
+    }
+    return root.innerHTML;
+  }
+
+  const previousTramoItem=typeof tramoItem==='function'?tramoItem:null;
+  if(previousTramoItem){
+    tramoItem=function(t,withActions=true){return cleanTramoHtml(t,previousTramoItem(t,withActions));};
+  }
+
+  function applyDeliveryLayout(){
+    document.querySelectorAll('.notice').forEach(box=>{
+      if(box.querySelector(':scope > strong')?.textContent.trim()!=='Fecha y hora del parto')return;
+      const actions=[...box.querySelectorAll('.actions')];
+      const fields=actions.find(a=>a.querySelector('input[type="date"]')&&a.querySelector('input[type="time"]'));
+      if(fields){
+        fields.style.display='grid';fields.style.gridTemplateColumns='minmax(0,1fr) minmax(0,1fr)';fields.style.gap='12px';fields.style.alignItems='end';
+        fields.querySelectorAll('label').forEach(l=>{l.style.display='block';l.style.width='100%';l.style.minWidth='0';});
+        const now=[...fields.querySelectorAll('button')].find(b=>b.textContent.includes('Usar fecha y hora actual'));
+        if(now){now.style.gridColumn='1 / -1';now.style.justifySelf='start';now.style.marginTop='2px';}
+      }
+    });
+  }
+  const style=document.createElement('style');
+  style.textContent='@media(max-width:560px){.sirro-delivery-only .actions:has(input[type="date"]){grid-template-columns:1fr!important}}';
+  document.head.appendChild(style);
+  const observer=new MutationObserver(()=>{clearTimeout(window.__sirroAuxDeliveryTimer);window.__sirroAuxDeliveryTimer=setTimeout(applyDeliveryLayout,40);});
+  observer.observe(document.body,{childList:true,subtree:true});applyDeliveryLayout();
 })();
