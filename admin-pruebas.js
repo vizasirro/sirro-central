@@ -75,22 +75,13 @@
     if(btn)btn.onclick=resetAllTestData;
   }
 
-  // Regla de asignación: un Usuario de Hospital solo puede pertenecer a
-  // hospitales internos de Olancho; un Usuario de Establecimiento no puede
-  // asignarse a un hospital ni a un establecimiento externo. Además, un
-  // Jefe Municipal solo puede asignarse a un municipio perteneciente al ECOR
-  // seleccionado. La validación se aplica tanto en la interfaz como al enviar.
   const isInternalHospital=f=>f?.tipo==='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalNonHospital=f=>f?.tipo!=='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalFacility=f=>f?.es_externo_olancho!==true;
 
   function municipiosForEcor(ecorId){
     if(!ecorId||typeof establishments==='undefined'||typeof municipios==='undefined')return [];
-    const ids=new Set(
-      establishments
-        .filter(x=>isInternalFacility(x)&&x.ecor_id===ecorId&&x.municipio_id)
-        .map(x=>x.municipio_id)
-    );
+    const ids=new Set(establishments.filter(x=>isInternalFacility(x)&&x.ecor_id===ecorId&&x.municipio_id).map(x=>x.municipio_id));
     return municipios.filter(x=>ids.has(x.id));
   }
 
@@ -100,7 +91,6 @@
     const sel=document.getElementById('newMunicipio');
     if(!sel||typeof municipios==='undefined'||typeof establishments==='undefined')return;
     const previous=sel.value;
-
     if(role==='USUARIO_HOSPITAL'){
       const hospitalMunicipioIds=new Set(establishments.filter(isInternalHospital).map(x=>x.municipio_id).filter(Boolean));
       const options=municipios.filter(x=>hospitalMunicipioIds.has(x.id));
@@ -108,18 +98,14 @@
       sel.value=options.some(x=>x.id===previous)?previous:'';
       return;
     }
-
     if(role==='JEFE_MUNICIPAL'){
       const options=municipiosForEcor(ecorId);
-      const placeholder=ecorId
-        ?(options.length?'Seleccione municipio del ECOR':'No hay municipios asignados a este ECOR')
-        :'Seleccione primero un ECOR';
+      const placeholder=ecorId?(options.length?'Seleccione municipio del ECOR':'No hay municipios asignados a este ECOR'):'Seleccione primero un ECOR';
       sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
       sel.value=options.some(x=>x.id===previous)?previous:'';
       sel.disabled=!ecorId||!options.length;
       return;
     }
-
     sel.disabled=false;
     sel.innerHTML='<option value="">Seleccione municipio</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
     if(municipios.some(x=>x.id===previous))sel.value=previous;
@@ -131,109 +117,88 @@
       const municipioId=document.getElementById('newMunicipio')?.value||'';
       const sel=document.getElementById('newEst');
       if(!sel||typeof establishments==='undefined')return;
-
-      let options=[];
-      let placeholder='Seleccione primero un municipio';
-      let disabled=true;
-
+      let options=[];let placeholder='Seleccione primero un municipio';let disabled=true;
       if(role==='USUARIO_HOSPITAL'){
         options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalHospital(x)):[];
         placeholder=municipioId?(options.length?'Seleccione hospital':'No hay hospital autorizado en este municipio'):'Seleccione primero un municipio';
         disabled=!municipioId||!options.length;
       }else if(role==='USUARIO_US'){
         options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalNonHospital(x)):[];
-        placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
-        disabled=!municipioId;
+        placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';disabled=!municipioId;
       }else{
         const guestEstablishment=role==='AUDITOR_CONSULTA'&&document.getElementById('newScope')?.value==='ESTABLECIMIENTO';
-        if(guestEstablishment){
-          options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&x.es_externo_olancho!==true):[];
-          placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
-          disabled=!municipioId;
-        }
+        if(guestEstablishment){options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&x.es_externo_olancho!==true):[];placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';disabled=!municipioId;}
       }
-
       sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
-      sel.disabled=disabled;
-      if(role==='USUARIO_HOSPITAL'&&options.length===1)sel.value=options[0].id;
+      sel.disabled=disabled;if(role==='USUARIO_HOSPITAL'&&options.length===1)sel.value=options[0].id;
     };
   }
 
-  const roleSelect=document.getElementById('newRole');
-  const ecorSelect=document.getElementById('newEcor');
-  const municipioSelect=document.getElementById('newMunicipio');
-  const scopeSelect=document.getElementById('newScope');
-  if(roleSelect)roleSelect.addEventListener('change',()=>{
-    const sel=document.getElementById('newEst'); if(sel)sel.value='';
-    syncUserMunicipios();
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(ecorSelect)ecorSelect.addEventListener('change',()=>{
-    const sel=document.getElementById('newEst'); if(sel)sel.value='';
-    syncUserMunicipios();
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(municipioSelect)municipioSelect.addEventListener('change',()=>{
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(scopeSelect)scopeSelect.addEventListener('change',()=>{
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
+  const roleSelect=document.getElementById('newRole');const ecorSelect=document.getElementById('newEcor');const municipioSelect=document.getElementById('newMunicipio');const scopeSelect=document.getElementById('newScope');
+  if(roleSelect)roleSelect.addEventListener('change',()=>{const sel=document.getElementById('newEst');if(sel)sel.value='';syncUserMunicipios();if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(ecorSelect)ecorSelect.addEventListener('change',()=>{const sel=document.getElementById('newEst');if(sel)sel.value='';syncUserMunicipios();if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(municipioSelect)municipioSelect.addEventListener('change',()=>{if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(scopeSelect)scopeSelect.addEventListener('change',()=>{if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
 
   const userForm=document.getElementById('userForm');
   if(userForm)userForm.addEventListener('submit',e=>{
-    const role=document.getElementById('newRole')?.value;
-    const ecorId=document.getElementById('newEcor')?.value||'';
-    const municipioId=document.getElementById('newMunicipio')?.value||'';
-    const facilityId=document.getElementById('newEst')?.value;
-
+    const role=document.getElementById('newRole')?.value;const ecorId=document.getElementById('newEcor')?.value||'';const municipioId=document.getElementById('newMunicipio')?.value||'';const facilityId=document.getElementById('newEst')?.value;
     if(role==='JEFE_MUNICIPAL'){
-      const validMunicipio=municipiosForEcor(ecorId).some(x=>x.id===municipioId);
-      if(validMunicipio)return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      showMsg('#userMsg','Seleccione primero el ECOR y luego un municipio que pertenezca a ese ECOR.','error');
-      return;
+      const validMunicipio=municipiosForEcor(ecorId).some(x=>x.id===municipioId);if(validMunicipio)return;
+      e.preventDefault();e.stopImmediatePropagation();showMsg('#userMsg','Seleccione primero el ECOR y luego un municipio que pertenezca a ese ECOR.','error');return;
     }
-
     if(!['USUARIO_HOSPITAL','USUARIO_US'].includes(role))return;
     const facility=typeof establishments!=='undefined'?establishments.find(x=>x.id===facilityId):null;
-    const valid=role==='USUARIO_HOSPITAL'
-      ?isInternalHospital(facility)&&!!municipioId&&facility?.municipio_id===municipioId
-      :isInternalNonHospital(facility);
-    if(valid)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
+    const valid=role==='USUARIO_HOSPITAL'?isInternalHospital(facility)&&!!municipioId&&facility?.municipio_id===municipioId:isInternalNonHospital(facility);
+    if(valid)return;e.preventDefault();e.stopImmediatePropagation();showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
   },true);
 
-  syncUserMunicipios();
-  updateTestModeCopy();
-  if(isAdmin()&&typeof renderUsers==='function')renderUsers();
+  syncUserMunicipios();updateTestModeCopy();if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
 
 // Extensión aditiva: gestión integral de usuarios por Administrador Regional.
 (() => {
   const isAdmin=()=>typeof profile!=='undefined'&&profile?.rol==='ADMIN_REGIONAL';
   const hospitalTypes={MEDICO_ESPECIALISTA:'Médico especialista',MEDICO_GENERAL:'Médico general',LICENCIADA_ENFERMERIA:'Licenciada(o) en Enfermería',AUXILIAR_ENFERMERIA:'Auxiliar de Enfermería',ATENCION_PACIENTE_CITAS:'Atención al Paciente / Citas'};
+  const medicalSpecialties={GINECO_OBSTETRICIA:'Gineco-Obstetricia',PEDIATRIA:'Pediatría',CIRUGIA:'Cirugía',ORTOPEDIA:'Ortopedia',MEDICINA_INTERNA:'Medicina Interna',OTRO:'Otro'};
   const roles=['ADMIN_REGIONAL','ECOR','JEFE_MUNICIPAL','USUARIO_US','USUARIO_HOSPITAL','AUDITOR_CONSULTA'];
   const roleText=r=>typeof roleLabel==='function'?roleLabel(r):r;
   const choose=(title,items,current,label=x=>x.nombre||x)=>{const idx=Math.max(0,items.findIndex(x=>(x.id??x)===current));const raw=prompt(title+'\n'+items.map((x,i)=>`${i+1}. ${label(x)}`).join('\n'),String(idx+1));if(raw===null)return {cancel:true};const item=items[Number(raw)-1];return item?{value:item}:{error:true};};
+  const normalizedSpecialty=value=>{
+    const raw=(value||'').trim();if(!raw)return '';
+    const found=Object.entries(medicalSpecialties).find(([,label])=>label.toLowerCase()===raw.toLowerCase());
+    return found?.[0]||'OTRO';
+  };
 
   function addHospitalFields(){
     const form=document.getElementById('userForm'),role=document.getElementById('newRole');
     if(!form||!role||document.getElementById('newHospitalType'))return;
     const a=document.createElement('label');a.id='newHospitalTypeWrap';a.className='hidden';a.innerHTML='<span>Tipo de usuario hospitalario</span><select id="newHospitalType"><option value="">Seleccione</option>'+Object.entries(hospitalTypes).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')+'</select>';
-    const b=document.createElement('label');b.id='newSpecialtyWrap';b.className='hidden';b.innerHTML='<span>Especialidad médica</span><input id="newSpecialty" placeholder="Ej. Gineco-Obstetricia">';
-    role.closest('label').insertAdjacentElement('afterend',a);a.insertAdjacentElement('afterend',b);
-    const sync=()=>{const h=role.value==='USUARIO_HOSPITAL',t=document.getElementById('newHospitalType'),s=document.getElementById('newSpecialty');a.classList.toggle('hidden',!h);t.required=h;const sp=h&&t.value==='MEDICO_ESPECIALISTA';b.classList.toggle('hidden',!sp);s.required=sp;if(!sp)s.value='';};
-    role.addEventListener('change',sync);document.getElementById('newHospitalType').addEventListener('change',sync);sync();
+    const b=document.createElement('label');b.id='newSpecialtyWrap';b.className='hidden';b.innerHTML='<span>Especialidad médica</span><select id="newSpecialty"><option value="">Seleccione especialidad</option>'+Object.entries(medicalSpecialties).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')+'</select>';
+    const c=document.createElement('label');c.id='newOtherSpecialtyWrap';c.className='hidden';c.innerHTML='<span>Especifique otra especialidad</span><input id="newOtherSpecialty" maxlength="120" placeholder="Nombre de la especialidad">';
+    role.closest('label').insertAdjacentElement('afterend',a);a.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',c);
+    const sync=()=>{
+      const h=role.value==='USUARIO_HOSPITAL',t=document.getElementById('newHospitalType'),s=document.getElementById('newSpecialty'),o=document.getElementById('newOtherSpecialty');
+      a.classList.toggle('hidden',!h);t.required=h;
+      const sp=h&&t.value==='MEDICO_ESPECIALISTA';b.classList.toggle('hidden',!sp);s.required=sp;
+      const other=sp&&s.value==='OTRO';c.classList.toggle('hidden',!other);o.required=other;
+      if(!sp){s.value='';o.value='';}else if(!other)o.value='';
+    };
+    role.addEventListener('change',sync);document.getElementById('newHospitalType').addEventListener('change',sync);document.getElementById('newSpecialty').addEventListener('change',sync);sync();
+  }
+
+  function selectedSpecialty(){
+    const code=document.getElementById('newSpecialty')?.value||'';
+    if(!code)return null;
+    if(code==='OTRO')return document.getElementById('newOtherSpecialty')?.value.trim()||null;
+    return medicalSpecialties[code]||null;
   }
 
   async function saveNewHospitalMetadata(result,body){
     if(body?.profile?.rol!=='USUARIO_HOSPITAL'||!result?.data?.user?.id)return result;
-    const type=document.getElementById('newHospitalType')?.value||'',specialty=document.getElementById('newSpecialty')?.value.trim()||null,p=body.profile;
+    const type=document.getElementById('newHospitalType')?.value||'',specialty=selectedSpecialty(),p=body.profile;
     if(!type)return result;
+    if(type==='MEDICO_ESPECIALISTA'&&!specialty)return {data:{error:'Usuario creado, pero falta registrar una especialidad médica válida.'},error:null};
     const {error}=await sb.rpc('sirro_admin_update_user_profile_v2',{p_usuario:result.data.user.id,p_nombre:p.nombre_completo,p_identidad:p.identidad,p_correo:p.correo,p_telefono:p.telefono,p_cargo:p.cargo_funcion,p_rol:p.rol,p_ecor:p.ecor_id||null,p_municipio:p.municipio_id||null,p_establecimiento:p.establecimiento_id||null,p_tipo_usuario_hospital:type,p_especialidad:specialty,p_notificaciones_activas:p.notificaciones_activas!==false,p_reportes_habilitados:false,p_alcance_consulta:'DEPARTAMENTO',p_permiso_centro_monitoria:false,p_motivo:'Configuración inicial del usuario hospitalario'});
     if(error)return {data:{error:'Usuario creado, pero no se pudo guardar el tipo hospitalario: '+error.message},error:null};
     return result;
@@ -258,7 +223,14 @@
     if(['ECOR','JEFE_MUNICIPAL'].includes(newRole)){const p=choose('Seleccione ECOR:',ecors,u.ecor_id);if(p.cancel)return;if(p.error)return alert('ECOR inválido.');ecorId=p.value.id;}
     if(newRole==='JEFE_MUNICIPAL'){const valid=municipios.filter(m=>establishments.some(e=>e.tipo==='US'&&e.ecor_id===ecorId&&e.municipio_id===m.id));const p=choose('Seleccione municipio:',valid,u.municipio_id);if(p.cancel)return;if(p.error)return alert('Municipio inválido.');municipioId=p.value.id;}
     if(['USUARIO_US','USUARIO_HOSPITAL'].includes(newRole)){const valid=establishments.filter(e=>newRole==='USUARIO_HOSPITAL'?(e.tipo==='HOSPITAL'&&e.es_externo_olancho!==true):(e.tipo==='US'&&e.es_externo_olancho!==true));const p=choose(newRole==='USUARIO_HOSPITAL'?'Seleccione hospital:':'Seleccione establecimiento:',valid,u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`);if(p.cancel)return;if(p.error)return alert('Establecimiento inválido.');estId=p.value.id;municipioId=p.value.municipio_id||null;ecorId=newRole==='USUARIO_US'?(p.value.ecor_id||null):null;}
-    if(newRole==='USUARIO_HOSPITAL'){const p=choose('Seleccione tipo de usuario hospitalario:',Object.keys(hospitalTypes),u.tipo_usuario_hospital||'',x=>hospitalTypes[x]);if(p.cancel)return;if(p.error)return alert('Tipo hospitalario inválido.');type=p.value;if(type==='MEDICO_ESPECIALISTA'){specialty=prompt('Especialidad médica:',u.especialidad||'');if(specialty===null)return;if(!specialty.trim())return alert('La especialidad es obligatoria.');specialty=specialty.trim();}}
+    if(newRole==='USUARIO_HOSPITAL'){
+      const p=choose('Seleccione tipo de usuario hospitalario:',Object.keys(hospitalTypes),u.tipo_usuario_hospital||'',x=>hospitalTypes[x]);if(p.cancel)return;if(p.error)return alert('Tipo hospitalario inválido.');type=p.value;
+      if(type==='MEDICO_ESPECIALISTA'){
+        const currentCode=normalizedSpecialty(u.especialidad);const q=choose('Seleccione especialidad médica:',Object.keys(medicalSpecialties),currentCode,x=>medicalSpecialties[x]);if(q.cancel)return;if(q.error)return alert('Especialidad inválida.');
+        specialty=q.value==='OTRO'?prompt('Especifique la especialidad médica:',currentCode==='OTRO'?(u.especialidad||''):''):medicalSpecialties[q.value];
+        if(specialty===null)return;if(!specialty.trim())return alert('La especialidad es obligatoria.');specialty=specialty.trim();
+      }
+    }
     if(newRole==='AUDITOR_CONSULTA'){const scopes=['ESTABLECIMIENTO','MUNICIPIO','ECOR','DEPARTAMENTO'];const p=choose('Alcance de consulta:',scopes,u.alcance_consulta||'DEPARTAMENTO',x=>({ESTABLECIMIENTO:'Establecimiento',MUNICIPIO:'Municipio',ECOR:'ECOR',DEPARTAMENTO:'Todo Olancho'})[x]);if(p.cancel)return;if(p.error)return alert('Alcance inválido.');scope=p.value;if(scope==='ECOR'){const q=choose('Seleccione ECOR:',ecors,u.ecor_id);if(q.cancel)return;if(q.error)return alert('ECOR inválido.');ecorId=q.value.id;}if(scope==='MUNICIPIO'){const q=choose('Seleccione municipio:',municipios,u.municipio_id);if(q.cancel)return;if(q.error)return alert('Municipio inválido.');municipioId=q.value.id;}if(scope==='ESTABLECIMIENTO'){const q=choose('Seleccione establecimiento:',establishments.filter(e=>e.es_externo_olancho!==true),u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`);if(q.cancel)return;if(q.error)return alert('Establecimiento inválido.');estId=q.value.id;}monitor=confirm('¿Habilitar Centro Regional de Monitoría?');}
     const notifications=confirm('¿Mantener activadas las notificaciones generales?');
     const reports=confirm('¿Habilitar reportes para este usuario?');
