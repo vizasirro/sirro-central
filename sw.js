@@ -1,5 +1,5 @@
-const CACHE='sirro-v041';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js'];
+const CACHE='sirro-v042';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js','./specialty-selector-fix.js'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
@@ -19,6 +19,21 @@ self.addEventListener('fetch',e=>{
   const sameOrigin=u.origin===self.location.origin;
   const isNavigation=e.request.mode==='navigate'||u.pathname.endsWith('/index.html')||u.pathname==='/';
   const isAppAsset=sameOrigin&&/\.(?:js|html|webmanifest)$/.test(u.pathname);
+
+  if(sameOrigin&&u.pathname.endsWith('/admin-pruebas.js')){
+    e.respondWith((async()=>{
+      const cache=await caches.open(CACHE);
+      let base;
+      let fix;
+      try{base=await fetch(e.request,{cache:'no-store'});if(base.ok)await cache.put(e.request,base.clone());}catch{base=await cache.match(e.request);}
+      try{fix=await fetch('./specialty-selector-fix.js',{cache:'no-store'});if(fix.ok)await cache.put('./specialty-selector-fix.js',fix.clone());}catch{fix=await cache.match('./specialty-selector-fix.js');}
+      if(!base)return new Response('',{status:503,headers:{'Content-Type':'application/javascript; charset=utf-8'}});
+      const baseText=await base.text();
+      const fixText=fix?await fix.text():'';
+      return new Response(baseText+'\n'+fixText,{status:200,headers:{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store'}});
+    })());
+    return;
+  }
 
   if(isNavigation||isAppAsset){
     e.respondWith(
