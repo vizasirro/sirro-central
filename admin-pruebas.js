@@ -75,22 +75,13 @@
     if(btn)btn.onclick=resetAllTestData;
   }
 
-  // Regla de asignación: un Usuario de Hospital solo puede pertenecer a
-  // hospitales internos de Olancho; un Usuario de Establecimiento no puede
-  // asignarse a un hospital ni a un establecimiento externo. Además, un
-  // Jefe Municipal solo puede asignarse a un municipio perteneciente al ECOR
-  // seleccionado. La validación se aplica tanto en la interfaz como al enviar.
   const isInternalHospital=f=>f?.tipo==='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalNonHospital=f=>f?.tipo!=='HOSPITAL'&&f?.es_externo_olancho!==true;
   const isInternalFacility=f=>f?.es_externo_olancho!==true;
 
   function municipiosForEcor(ecorId){
     if(!ecorId||typeof establishments==='undefined'||typeof municipios==='undefined')return [];
-    const ids=new Set(
-      establishments
-        .filter(x=>isInternalFacility(x)&&x.ecor_id===ecorId&&x.municipio_id)
-        .map(x=>x.municipio_id)
-    );
+    const ids=new Set(establishments.filter(x=>isInternalFacility(x)&&x.ecor_id===ecorId&&x.municipio_id).map(x=>x.municipio_id));
     return municipios.filter(x=>ids.has(x.id));
   }
 
@@ -100,7 +91,6 @@
     const sel=document.getElementById('newMunicipio');
     if(!sel||typeof municipios==='undefined'||typeof establishments==='undefined')return;
     const previous=sel.value;
-
     if(role==='USUARIO_HOSPITAL'){
       const hospitalMunicipioIds=new Set(establishments.filter(isInternalHospital).map(x=>x.municipio_id).filter(Boolean));
       const options=municipios.filter(x=>hospitalMunicipioIds.has(x.id));
@@ -108,18 +98,14 @@
       sel.value=options.some(x=>x.id===previous)?previous:'';
       return;
     }
-
     if(role==='JEFE_MUNICIPAL'){
       const options=municipiosForEcor(ecorId);
-      const placeholder=ecorId
-        ?(options.length?'Seleccione municipio del ECOR':'No hay municipios asignados a este ECOR')
-        :'Seleccione primero un ECOR';
+      const placeholder=ecorId?(options.length?'Seleccione municipio del ECOR':'No hay municipios asignados a este ECOR'):'Seleccione primero un ECOR';
       sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
       sel.value=options.some(x=>x.id===previous)?previous:'';
       sel.disabled=!ecorId||!options.length;
       return;
     }
-
     sel.disabled=false;
     sel.innerHTML='<option value="">Seleccione municipio</option>'+municipios.map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
     if(municipios.some(x=>x.id===previous))sel.value=previous;
@@ -131,252 +117,99 @@
       const municipioId=document.getElementById('newMunicipio')?.value||'';
       const sel=document.getElementById('newEst');
       if(!sel||typeof establishments==='undefined')return;
-
-      let options=[];
-      let placeholder='Seleccione primero un municipio';
-      let disabled=true;
-
+      let options=[];let placeholder='Seleccione primero un municipio';let disabled=true;
       if(role==='USUARIO_HOSPITAL'){
         options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalHospital(x)):[];
         placeholder=municipioId?(options.length?'Seleccione hospital':'No hay hospital autorizado en este municipio'):'Seleccione primero un municipio';
         disabled=!municipioId||!options.length;
       }else if(role==='USUARIO_US'){
         options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&isInternalNonHospital(x)):[];
-        placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
-        disabled=!municipioId;
+        placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';disabled=!municipioId;
       }else{
         const guestEstablishment=role==='AUDITOR_CONSULTA'&&document.getElementById('newScope')?.value==='ESTABLECIMIENTO';
-        if(guestEstablishment){
-          options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&x.es_externo_olancho!==true):[];
-          placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';
-          disabled=!municipioId;
-        }
+        if(guestEstablishment){options=municipioId?establishments.filter(x=>x.municipio_id===municipioId&&x.es_externo_olancho!==true):[];placeholder=municipioId?'Seleccione establecimiento':'Seleccione primero un municipio';disabled=!municipioId;}
       }
-
       sel.innerHTML=`<option value="">${placeholder}</option>`+options.map(x=>`<option value="${x.id}">${esc(x.nombre)} · RUPS ${esc(x.codigo_rups)}</option>`).join('');
-      sel.disabled=disabled;
-      if(role==='USUARIO_HOSPITAL'&&options.length===1)sel.value=options[0].id;
+      sel.disabled=disabled;if(role==='USUARIO_HOSPITAL'&&options.length===1)sel.value=options[0].id;
     };
   }
 
-  const roleSelect=document.getElementById('newRole');
-  const ecorSelect=document.getElementById('newEcor');
-  const municipioSelect=document.getElementById('newMunicipio');
-  const scopeSelect=document.getElementById('newScope');
-  if(roleSelect)roleSelect.addEventListener('change',()=>{
-    const sel=document.getElementById('newEst'); if(sel)sel.value='';
-    syncUserMunicipios();
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(ecorSelect)ecorSelect.addEventListener('change',()=>{
-    const sel=document.getElementById('newEst'); if(sel)sel.value='';
-    syncUserMunicipios();
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(municipioSelect)municipioSelect.addEventListener('change',()=>{
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
-  if(scopeSelect)scopeSelect.addEventListener('change',()=>{
-    if(typeof fillUserEstablishments==='function')fillUserEstablishments();
-  });
+  const roleSelect=document.getElementById('newRole');const ecorSelect=document.getElementById('newEcor');const municipioSelect=document.getElementById('newMunicipio');const scopeSelect=document.getElementById('newScope');
+  if(roleSelect)roleSelect.addEventListener('change',()=>{const sel=document.getElementById('newEst');if(sel)sel.value='';syncUserMunicipios();if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(ecorSelect)ecorSelect.addEventListener('change',()=>{const sel=document.getElementById('newEst');if(sel)sel.value='';syncUserMunicipios();if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(municipioSelect)municipioSelect.addEventListener('change',()=>{if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
+  if(scopeSelect)scopeSelect.addEventListener('change',()=>{if(typeof fillUserEstablishments==='function')fillUserEstablishments();});
 
   const userForm=document.getElementById('userForm');
   if(userForm)userForm.addEventListener('submit',e=>{
-    const role=document.getElementById('newRole')?.value;
-    const ecorId=document.getElementById('newEcor')?.value||'';
-    const municipioId=document.getElementById('newMunicipio')?.value||'';
-    const facilityId=document.getElementById('newEst')?.value;
-
+    const role=document.getElementById('newRole')?.value;const ecorId=document.getElementById('newEcor')?.value||'';const municipioId=document.getElementById('newMunicipio')?.value||'';const facilityId=document.getElementById('newEst')?.value;
     if(role==='JEFE_MUNICIPAL'){
-      const validMunicipio=municipiosForEcor(ecorId).some(x=>x.id===municipioId);
-      if(validMunicipio)return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      showMsg('#userMsg','Seleccione primero el ECOR y luego un municipio que pertenezca a ese ECOR.','error');
-      return;
+      const validMunicipio=municipiosForEcor(ecorId).some(x=>x.id===municipioId);if(validMunicipio)return;e.preventDefault();e.stopImmediatePropagation();showMsg('#userMsg','Seleccione primero el ECOR y luego un municipio que pertenezca a ese ECOR.','error');return;
     }
-
     if(!['USUARIO_HOSPITAL','USUARIO_US'].includes(role))return;
     const facility=typeof establishments!=='undefined'?establishments.find(x=>x.id===facilityId):null;
-    const valid=role==='USUARIO_HOSPITAL'
-      ?isInternalHospital(facility)&&!!municipioId&&facility?.municipio_id===municipioId
-      :isInternalNonHospital(facility);
-    if(valid)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
+    const valid=role==='USUARIO_HOSPITAL'?isInternalHospital(facility)&&!!municipioId&&facility?.municipio_id===municipioId:isInternalNonHospital(facility);
+    if(valid)return;e.preventDefault();e.stopImmediatePropagation();showMsg('#userMsg',role==='USUARIO_HOSPITAL'?'Seleccione Juticalpa o Catacamas y el hospital autorizado correspondiente.':'Seleccione una unidad de salud válida; este rol no puede asignarse a un hospital.','error');
   },true);
 
-  syncUserMunicipios();
-  updateTestModeCopy();
-  if(isAdmin()&&typeof renderUsers==='function')renderUsers();
+  syncUserMunicipios();updateTestModeCopy();if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
 
-// Gestión integral de usuarios por Administrador Regional.
-// Se añade sobre lo existente para preservar la Regla de Oro de SIRRO.
 (() => {
   const isAdmin=()=>typeof profile!=='undefined'&&profile?.rol==='ADMIN_REGIONAL';
-  const hospitalTypes={
-    MEDICO_ESPECIALISTA:'Médico especialista',
-    MEDICO_GENERAL:'Médico general',
-    LICENCIADA_ENFERMERIA:'Licenciada(o) en Enfermería',
-    AUXILIAR_ENFERMERIA:'Auxiliar de Enfermería',
-    ATENCION_PACIENTE_CITAS:'Atención al Paciente / Citas'
-  };
+  const hospitalTypes={MEDICO_ESPECIALISTA:'Médico especialista',MEDICO_GENERAL:'Médico general',LICENCIADA_ENFERMERIA:'Licenciada(o) en Enfermería',AUXILIAR_ENFERMERIA:'Auxiliar de Enfermería',ATENCION_PACIENTE_CITAS:'Atención al Paciente / Citas'};
   const roleOptions=['ADMIN_REGIONAL','ECOR','JEFE_MUNICIPAL','USUARIO_US','USUARIO_HOSPITAL','AUDITOR_CONSULTA'];
   const roleText=r=>typeof roleLabel==='function'?roleLabel(r):r;
-  const choose=(title,items,currentValue,labelFn=x=>x.nombre||x)=>{
-    const idx=Math.max(0,items.findIndex(x=>(x.id??x)===currentValue));
-    const value=prompt(title+'\n'+items.map((x,i)=>`${i+1}. ${labelFn(x)}`).join('\n'),String(idx+1));
-    if(value===null)return {cancel:true};
-    const n=Number(value);
-    return items[n-1]?{value:items[n-1]}:{error:true};
-  };
+  const choose=(title,items,currentValue,labelFn=x=>x.nombre||x)=>{const idx=Math.max(0,items.findIndex(x=>(x.id??x)===currentValue));const value=prompt(title+'\n'+items.map((x,i)=>`${i+1}. ${labelFn(x)}`).join('\n'),String(idx+1));if(value===null)return {cancel:true};const n=Number(value);return items[n-1]?{value:items[n-1]}:{error:true};};
 
   function installHospitalCreationFields(){
-    const form=document.getElementById('userForm');
-    const role=document.getElementById('newRole');
-    if(!form||!role||document.getElementById('newHospitalType'))return;
-    const roleLabelEl=role.closest('label');
-    const typeLabel=document.createElement('label');
-    typeLabel.id='newHospitalTypeWrap'; typeLabel.className='hidden';
-    typeLabel.innerHTML='<span>Tipo de usuario hospitalario</span><select id="newHospitalType"><option value="">Seleccione</option>'+Object.entries(hospitalTypes).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')+'</select>';
-    const specLabel=document.createElement('label');
-    specLabel.id='newSpecialtyWrap'; specLabel.className='hidden';
-    specLabel.innerHTML='<span>Especialidad médica</span><input id="newSpecialty" placeholder="Ej. Gineco-Obstetricia">';
-    roleLabelEl.insertAdjacentElement('afterend',typeLabel);
-    typeLabel.insertAdjacentElement('afterend',specLabel);
-    const sync=()=>{
-      const hospital=role.value==='USUARIO_HOSPITAL';
-      const type=document.getElementById('newHospitalType');
-      const spec=document.getElementById('newSpecialty');
-      typeLabel.classList.toggle('hidden',!hospital);
-      type.required=hospital;
-      const specialist=hospital&&type.value==='MEDICO_ESPECIALISTA';
-      specLabel.classList.toggle('hidden',!specialist);
-      spec.required=specialist;
-      if(!specialist)spec.value='';
-    };
-    role.addEventListener('change',sync);
-    document.getElementById('newHospitalType').addEventListener('change',sync);
-    sync();
+    const form=document.getElementById('userForm');const role=document.getElementById('newRole');if(!form||!role||document.getElementById('newHospitalType'))return;
+    const roleLabelEl=role.closest('label');const typeLabel=document.createElement('label');typeLabel.id='newHospitalTypeWrap';typeLabel.className='hidden';typeLabel.innerHTML='<span>Tipo de usuario hospitalario</span><select id="newHospitalType"><option value="">Seleccione</option>'+Object.entries(hospitalTypes).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')+'</select>';
+    const specLabel=document.createElement('label');specLabel.id='newSpecialtyWrap';specLabel.className='hidden';specLabel.innerHTML='<span>Especialidad médica</span><input id="newSpecialty" placeholder="Ej. Gineco-Obstetricia">';
+    roleLabelEl.insertAdjacentElement('afterend',typeLabel);typeLabel.insertAdjacentElement('afterend',specLabel);
+    const sync=()=>{const hospital=role.value==='USUARIO_HOSPITAL';const type=document.getElementById('newHospitalType');const spec=document.getElementById('newSpecialty');typeLabel.classList.toggle('hidden',!hospital);type.required=hospital;const specialist=hospital&&type.value==='MEDICO_ESPECIALISTA';specLabel.classList.toggle('hidden',!specialist);spec.required=specialist;if(!specialist)spec.value='';};
+    role.addEventListener('change',sync);document.getElementById('newHospitalType').addEventListener('change',sync);sync();
   }
 
   async function saveHospitalCreationMetadata(result,body){
     if(body?.profile?.rol!=='USUARIO_HOSPITAL'||!result?.data?.user?.id)return result;
-    const type=document.getElementById('newHospitalType')?.value||'';
-    const specialty=document.getElementById('newSpecialty')?.value.trim()||null;
-    if(!type)return result;
-    const p=body.profile;
-    const {error}=await sb.rpc('sirro_admin_update_user_profile_v2',{
-      p_usuario:result.data.user.id,p_nombre:p.nombre_completo,p_identidad:p.identidad,p_correo:p.correo,p_telefono:p.telefono,p_cargo:p.cargo_funcion,p_rol:p.rol,
-      p_ecor:p.ecor_id||null,p_municipio:p.municipio_id||null,p_establecimiento:p.establecimiento_id||null,
-      p_tipo_usuario_hospital:type,p_especialidad:specialty,p_notificaciones_activas:p.notificaciones_activas!==false,p_reportes_habilitados:false,
-      p_alcance_consulta:'DEPARTAMENTO',p_permiso_centro_monitoria:false,p_motivo:'Configuración inicial del usuario hospitalario'
-    });
-    if(error)return {data:{error:'Usuario creado, pero no se pudo guardar el tipo hospitalario: '+error.message},error:null};
-    return result;
+    const type=document.getElementById('newHospitalType')?.value||'';const specialty=document.getElementById('newSpecialty')?.value.trim()||null;if(!type)return result;const p=body.profile;
+    const {error}=await sb.rpc('sirro_admin_update_user_profile_v2',{p_usuario:result.data.user.id,p_nombre:p.nombre_completo,p_identidad:p.identidad,p_correo:p.correo,p_telefono:p.telefono,p_cargo:p.cargo_funcion,p_rol:p.rol,p_ecor:p.ecor_id||null,p_municipio:p.municipio_id||null,p_establecimiento:p.establecimiento_id||null,p_tipo_usuario_hospital:type,p_especialidad:specialty,p_notificaciones_activas:p.notificaciones_activas!==false,p_reportes_habilitados:false,p_alcance_consulta:'DEPARTAMENTO',p_permiso_centro_monitoria:false,p_motivo:'Configuración inicial del usuario hospitalario'});
+    if(error)return {data:{error:'Usuario creado, pero no se pudo guardar el tipo hospitalario: '+error.message},error:null};return result;
   }
 
   if(typeof sb!=='undefined'&&sb?.functions?.invoke&&!sb.functions.__sirroAdminWrapped){
-    const originalInvoke=sb.functions.invoke.bind(sb.functions);
-    sb.functions.invoke=async(name,options)=>{
-      const result=await originalInvoke(name,options);
-      if(name==='sirro-create-user')return saveHospitalCreationMetadata(result,options?.body);
-      return result;
-    };
-    sb.functions.__sirroAdminWrapped=true;
+    const originalInvoke=sb.functions.invoke.bind(sb.functions);sb.functions.invoke=async(name,options)=>{const result=await originalInvoke(name,options);if(name==='sirro-create-user')return saveHospitalCreationMetadata(result,options?.body);return result;};sb.functions.__sirroAdminWrapped=true;
   }
 
   async function editUser(id){
-    if(!isAdmin())return alert('Solo el Administrador Regional puede editar usuarios.');
-    const u=(typeof users!=='undefined'?users:[]).find(x=>x.id===id); if(!u)return alert('Usuario no encontrado.');
-    const nombre=prompt('Nombre completo:',u.nombre_completo||''); if(nombre===null)return;
-    const identidad=prompt('Identidad (13 dígitos):',u.identidad||''); if(identidad===null)return;
-    const correo=prompt('Correo personal/institucional:',u.correo||''); if(correo===null)return;
-    const telefono=prompt('Teléfono (8 dígitos):',u.telefono||''); if(telefono===null)return;
-    const cargo=prompt('Cargo / función:',u.cargo_funcion||''); if(cargo===null)return;
-
-    const rolePick=choose('Seleccione el rol:',roleOptions,u.rol,x=>roleText(x)); if(rolePick.cancel)return; if(rolePick.error)return alert('Rol inválido.');
-    const newRole=rolePick.value;
+    if(!isAdmin())return alert('Solo el Administrador Regional puede editar usuarios.');const u=(typeof users!=='undefined'?users:[]).find(x=>x.id===id);if(!u)return alert('Usuario no encontrado.');
+    const nombre=prompt('Nombre completo:',u.nombre_completo||'');if(nombre===null)return;const identidad=prompt('Identidad (13 dígitos):',u.identidad||'');if(identidad===null)return;const correo=prompt('Correo personal/institucional:',u.correo||'');if(correo===null)return;const telefono=prompt('Teléfono (8 dígitos):',u.telefono||'');if(telefono===null)return;const cargo=prompt('Cargo / función:',u.cargo_funcion||'');if(cargo===null)return;
+    const rolePick=choose('Seleccione el rol:',roleOptions,u.rol,x=>roleText(x));if(rolePick.cancel)return;if(rolePick.error)return alert('Rol inválido.');const newRole=rolePick.value;
     let ecorId=null,municipioId=null,estId=null,scope='DEPARTAMENTO',monitor=false,type=null,specialty=null;
-
-    if(newRole==='ECOR'||newRole==='JEFE_MUNICIPAL'){
-      const p=choose('Seleccione ECOR:',typeof ecors!=='undefined'?ecors:[],u.ecor_id); if(p.cancel)return;if(p.error)return alert('ECOR inválido.'); ecorId=p.value.id;
-    }
-    if(newRole==='JEFE_MUNICIPAL'){
-      const validMuns=(typeof municipios!=='undefined'?municipios:[]).filter(m=>(typeof establishments!=='undefined'?establishments:[]).some(e=>e.tipo==='US'&&e.activo!==false&&e.ecor_id===ecorId&&e.municipio_id===m.id));
-      const p=choose('Seleccione municipio:',validMuns,u.municipio_id); if(p.cancel)return;if(p.error)return alert('Municipio inválido.'); municipioId=p.value.id;
-    }
-    if(['USUARIO_US','USUARIO_HOSPITAL'].includes(newRole)){
-      const valid=(typeof establishments!=='undefined'?establishments:[]).filter(e=>newRole==='USUARIO_HOSPITAL'?(e.tipo==='HOSPITAL'&&e.es_externo_olancho!==true):(e.tipo==='US'&&e.es_externo_olancho!==true));
-      const p=choose(newRole==='USUARIO_HOSPITAL'?'Seleccione hospital:':'Seleccione establecimiento:',valid,u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`); if(p.cancel)return;if(p.error)return alert('Establecimiento inválido.'); estId=p.value.id;
-      municipioId=p.value.municipio_id||null; ecorId=newRole==='USUARIO_US'?(p.value.ecor_id||null):null;
-    }
-    if(newRole==='USUARIO_HOSPITAL'){
-      const types=Object.keys(hospitalTypes);
-      const p=choose('Seleccione tipo de usuario hospitalario:',types,u.tipo_usuario_hospital||'',x=>hospitalTypes[x]); if(p.cancel)return;if(p.error)return alert('Tipo hospitalario inválido.'); type=p.value;
-      if(type==='MEDICO_ESPECIALISTA'){specialty=prompt('Especialidad médica:',u.especialidad||'');if(specialty===null)return;if(!specialty.trim())return alert('La especialidad es obligatoria.');specialty=specialty.trim();}
-    }
-    if(newRole==='AUDITOR_CONSULTA'){
-      const scopes=['ESTABLECIMIENTO','MUNICIPIO','ECOR','DEPARTAMENTO'];
-      const p=choose('Alcance de consulta:',scopes,u.alcance_consulta||'DEPARTAMENTO',x=>({ESTABLECIMIENTO:'Establecimiento',MUNICIPIO:'Municipio',ECOR:'ECOR',DEPARTAMENTO:'Todo Olancho'})[x]); if(p.cancel)return;if(p.error)return alert('Alcance inválido.'); scope=p.value;
-      if(scope==='ECOR'){const q=choose('Seleccione ECOR:',ecors,u.ecor_id);if(q.cancel)return;if(q.error)return alert('ECOR inválido.');ecorId=q.value.id;}
-      if(scope==='MUNICIPIO'){const q=choose('Seleccione municipio:',municipios,u.municipio_id);if(q.cancel)return;if(q.error)return alert('Municipio inválido.');municipioId=q.value.id;}
-      if(scope==='ESTABLECIMIENTO'){const q=choose('Seleccione establecimiento:',establishments.filter(e=>e.es_externo_olancho!==true),u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`);if(q.cancel)return;if(q.error)return alert('Establecimiento inválido.');estId=q.value.id;}
-      monitor=confirm('¿Habilitar Centro Regional de Monitoría para este usuario?');
-    }
-
-    const notifications=confirm('¿Mantener activadas las notificaciones generales para este usuario?');
-    const reports=confirm('¿Habilitar reportes para este usuario?');
-    const reason=prompt('Motivo obligatorio del cambio:'); if(!reason?.trim())return alert('El motivo es obligatorio.');
+    if(newRole==='ECOR'||newRole==='JEFE_MUNICIPAL'){const p=choose('Seleccione ECOR:',typeof ecors!=='undefined'?ecors:[],u.ecor_id);if(p.cancel)return;if(p.error)return alert('ECOR inválido.');ecorId=p.value.id;}
+    if(newRole==='JEFE_MUNICIPAL'){const validMuns=(typeof municipios!=='undefined'?municipios:[]).filter(m=>(typeof establishments!=='undefined'?establishments:[]).some(e=>e.tipo==='US'&&e.activo!==false&&e.ecor_id===ecorId&&e.municipio_id===m.id));const p=choose('Seleccione municipio:',validMuns,u.municipio_id);if(p.cancel)return;if(p.error)return alert('Municipio inválido.');municipioId=p.value.id;}
+    if(['USUARIO_US','USUARIO_HOSPITAL'].includes(newRole)){const valid=(typeof establishments!=='undefined'?establishments:[]).filter(e=>newRole==='USUARIO_HOSPITAL'?(e.tipo==='HOSPITAL'&&e.es_externo_olancho!==true):(e.tipo==='US'&&e.es_externo_olancho!==true));const p=choose(newRole==='USUARIO_HOSPITAL'?'Seleccione hospital:':'Seleccione establecimiento:',valid,u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`);if(p.cancel)return;if(p.error)return alert('Establecimiento inválido.');estId=p.value.id;municipioId=p.value.municipio_id||null;ecorId=newRole==='USUARIO_US'?(p.value.ecor_id||null):null;}
+    if(newRole==='USUARIO_HOSPITAL'){const types=Object.keys(hospitalTypes);const p=choose('Seleccione tipo de usuario hospitalario:',types,u.tipo_usuario_hospital||'',x=>hospitalTypes[x]);if(p.cancel)return;if(p.error)return alert('Tipo hospitalario inválido.');type=p.value;if(type==='MEDICO_ESPECIALISTA'){specialty=prompt('Especialidad médica:',u.especialidad||'');if(specialty===null)return;if(!specialty.trim())return alert('La especialidad es obligatoria.');specialty=specialty.trim();}}
+    if(newRole==='AUDITOR_CONSULTA'){const scopes=['ESTABLECIMIENTO','MUNICIPIO','ECOR','DEPARTAMENTO'];const p=choose('Alcance de consulta:',scopes,u.alcance_consulta||'DEPARTAMENTO',x=>({ESTABLECIMIENTO:'Establecimiento',MUNICIPIO:'Municipio',ECOR:'ECOR',DEPARTAMENTO:'Todo Olancho'})[x]);if(p.cancel)return;if(p.error)return alert('Alcance inválido.');scope=p.value;if(scope==='ECOR'){const q=choose('Seleccione ECOR:',ecors,u.ecor_id);if(q.cancel)return;if(q.error)return alert('ECOR inválido.');ecorId=q.value.id;}if(scope==='MUNICIPIO'){const q=choose('Seleccione municipio:',municipios,u.municipio_id);if(q.cancel)return;if(q.error)return alert('Municipio inválido.');municipioId=q.value.id;}if(scope==='ESTABLECIMIENTO'){const q=choose('Seleccione establecimiento:',establishments.filter(e=>e.es_externo_olancho!==true),u.establecimiento_id,x=>`${x.nombre} · RUPS ${x.codigo_rups||''}`);if(q.cancel)return;if(q.error)return alert('Establecimiento inválido.');estId=q.value.id;}monitor=confirm('¿Habilitar Centro Regional de Monitoría para este usuario?');}
+    const notifications=confirm('¿Mantener activadas las notificaciones generales para este usuario?');const reports=confirm('¿Habilitar reportes para este usuario?');const reason=prompt('Motivo obligatorio del cambio:');if(!reason?.trim())return alert('El motivo es obligatorio.');
     if(!confirm(`¿Guardar los cambios de ${u.nombre_completo}?\n\nRol: ${roleText(u.rol)} → ${roleText(newRole)}\nLos cambios quedarán registrados en Auditoría.`))return;
-    const {error}=await sb.rpc('sirro_admin_update_user_profile_v2',{
-      p_usuario:id,p_nombre:nombre.trim(),p_identidad:identidad.trim(),p_correo:correo.trim(),p_telefono:telefono.trim(),p_cargo:cargo.trim(),p_rol:newRole,
-      p_ecor:ecorId,p_municipio:municipioId,p_establecimiento:estId,p_tipo_usuario_hospital:type,p_especialidad:specialty,
-      p_notificaciones_activas:notifications,p_reportes_habilitados:reports,p_alcance_consulta:scope,p_permiso_centro_monitoria:monitor,p_motivo:reason.trim()
-    });
-    if(error)return alert(error.message);
-    if(typeof loadUsers==='function')await loadUsers(); if(typeof renderUsers==='function')renderUsers();
-    alert('Usuario actualizado correctamente. El cambio quedó registrado en Auditoría.');
+    const {error}=await sb.rpc('sirro_admin_update_user_profile_v2',{p_usuario:id,p_nombre:nombre.trim(),p_identidad:identidad.trim(),p_correo:correo.trim(),p_telefono:telefono.trim(),p_cargo:cargo.trim(),p_rol:newRole,p_ecor:ecorId,p_municipio:municipioId,p_establecimiento:estId,p_tipo_usuario_hospital:type,p_especialidad:specialty,p_notificaciones_activas:notifications,p_reportes_habilitados:reports,p_alcance_consulta:scope,p_permiso_centro_monitoria:monitor,p_motivo:reason.trim()});
+    if(error)return alert(error.message);if(typeof loadUsers==='function')await loadUsers();if(typeof renderUsers==='function')renderUsers();alert('Usuario actualizado correctamente. El cambio quedó registrado en Auditoría.');
   }
   window.editUser=editUser;
 
   async function sendPasswordReset(id){
-    if(!isAdmin())return alert('Solo el Administrador Regional puede gestionar accesos.');
-    const u=(typeof users!=='undefined'?users:[]).find(x=>x.id===id);if(!u?.correo)return alert('El usuario no tiene correo registrado.');
+    if(!isAdmin())return alert('Solo el Administrador Regional puede gestionar accesos.');const u=(typeof users!=='undefined'?users:[]).find(x=>x.id===id);if(!u?.correo)return alert('El usuario no tiene correo registrado.');
     if(!confirm(`¿Enviar un enlace de restablecimiento de contraseña a ${u.correo}?`))return;
-    const {error}=await sb.auth.resetPasswordForEmail(u.correo,{redirectTo:location.origin+location.pathname});
-    if(error)return alert('No se pudo enviar el enlace: '+error.message);
-    alert('Solicitud enviada. El Administrador Regional no ve ni conoce la nueva contraseña.');
+    const {data,error}=await sb.functions.invoke('sirro-admin-password-reset',{body:{user_id:id}});
+    if(error)return alert('No se pudo solicitar el restablecimiento: '+error.message);if(data?.error)return alert(data.error);
+    alert('Enlace de restablecimiento enviado al correo registrado. El Administrador Regional no ve ni conoce la nueva contraseña.');
   }
   window.sendPasswordReset=sendPasswordReset;
 
   const previousRender=typeof renderUsers==='function'?renderUsers:null;
-  if(previousRender){
-    renderUsers=function(){
-      previousRender();
-      if(!isAdmin())return;
-      const list=document.getElementById('usersList'); if(!list)return;
-      const rows=[...list.children];
-      (typeof users!=='undefined'?users:[]).forEach((u,i)=>{
-        const row=rows[i];const actions=row?.querySelector('.actions');if(!actions)return;
-        if(!actions.querySelector(`[data-edit-user="${u.id}"]`)){
-          const edit=document.createElement('button');edit.type='button';edit.className='ghost';edit.dataset.editUser=u.id;edit.textContent='Editar usuario';edit.onclick=()=>editUser(u.id);actions.prepend(edit);
-        }
-        if(!actions.querySelector(`[data-reset-user="${u.id}"]`)){
-          const reset=document.createElement('button');reset.type='button';reset.className='ghost';reset.dataset.resetUser=u.id;reset.textContent='Restablecer acceso';reset.onclick=()=>sendPasswordReset(u.id);actions.appendChild(reset);
-        }
-        if(u.rol==='USUARIO_HOSPITAL'&&u.tipo_usuario_hospital){
-          const info=row.querySelector('small');
-          if(info&&!row.querySelector('[data-hospital-type]')){
-            const d=document.createElement('small');d.dataset.hospitalType='1';d.style.display='block';d.textContent=`Hospital: ${hospitalTypes[u.tipo_usuario_hospital]||u.tipo_usuario_hospital}${u.especialidad?' · '+u.especialidad:''}`;info.insertAdjacentElement('afterend',d);
-          }
-        }
-      });
-    };
-  }
+  if(previousRender){renderUsers=function(){previousRender();if(!isAdmin())return;const list=document.getElementById('usersList');if(!list)return;const rows=[...list.children];(typeof users!=='undefined'?users:[]).forEach((u,i)=>{const row=rows[i];const actions=row?.querySelector('.actions');if(!actions)return;if(!actions.querySelector(`[data-edit-user="${u.id}"]`)){const edit=document.createElement('button');edit.type='button';edit.className='ghost';edit.dataset.editUser=u.id;edit.textContent='Editar usuario';edit.onclick=()=>editUser(u.id);actions.prepend(edit);}if(!actions.querySelector(`[data-reset-user="${u.id}"]`)){const reset=document.createElement('button');reset.type='button';reset.className='ghost';reset.dataset.resetUser=u.id;reset.textContent='Restablecer acceso';reset.onclick=()=>sendPasswordReset(u.id);actions.appendChild(reset);}if(u.rol==='USUARIO_HOSPITAL'&&u.tipo_usuario_hospital){const info=row.querySelector('small');if(info&&!row.querySelector('[data-hospital-type]')){const d=document.createElement('small');d.dataset.hospitalType='1';d.style.display='block';d.textContent=`Hospital: ${hospitalTypes[u.tipo_usuario_hospital]||u.tipo_usuario_hospital}${u.especialidad?' · '+u.especialidad:''}`;info.insertAdjacentElement('afterend',d);}}});};}
 
-  installHospitalCreationFields();
-  if(isAdmin()&&typeof renderUsers==='function')renderUsers();
+  installHospitalCreationFields();if(isAdmin()&&typeof renderUsers==='function')renderUsers();
 })();
