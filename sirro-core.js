@@ -23,39 +23,21 @@
   };
 
   const api = Object.freeze({
-    rpc(name, params = {}) {
-      return client().rpc(name, params);
-    },
-    invoke(name, body = {}) {
-      return client().functions.invoke(name, { body });
-    },
-    table(name) {
-      return client().from(name);
-    }
+    rpc(name, params = {}) { return client().rpc(name, params); },
+    invoke(name, body = {}) { return client().functions.invoke(name, { body }); },
+    table(name) { return client().from(name); }
   });
 
   const errors = Object.freeze({
-    message(error, fallback = 'Ocurrió un error inesperado.') {
-      return error?.message || error?.error_description || fallback;
-    }
+    message(error, fallback = 'Ocurrió un error inesperado.') { return error?.message || error?.error_description || fallback; }
   });
 
   const authz = Object.freeze({
-    isAdminRegional(profileValue) {
-      return profileValue?.rol === ROLES.ADMIN_REGIONAL;
-    },
-    isHospital(profileValue) {
-      return profileValue?.rol === ROLES.USUARIO_HOSPITAL;
-    }
+    isAdminRegional(profileValue) { return profileValue?.rol === ROLES.ADMIN_REGIONAL; },
+    isHospital(profileValue) { return profileValue?.rol === ROLES.USUARIO_HOSPITAL; }
   });
 
-  window.SIRRO = Object.freeze({
-    version: 'core-3',
-    constants: Object.freeze({ ROLES, TZ, PUERPERIO }),
-    api,
-    errors,
-    authz
-  });
+  window.SIRRO = Object.freeze({ version: 'core-3', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
   function loadModule(src, marker) {
     if (window[marker] || document.querySelector(`script[src="${src}"]`)) return;
@@ -71,4 +53,5 @@
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
+  loadModule('./specialty-transfers.js', 'SIRRO_SPECIALTY_TRANSFERS');
 })();
