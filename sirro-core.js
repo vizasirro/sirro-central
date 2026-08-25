@@ -70,4 +70,5 @@
   loadModule('./auth-security.js', 'SIRRO_AUTH_SECURITY');
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
+  loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
 })();
