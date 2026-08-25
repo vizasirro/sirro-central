@@ -55,4 +55,5 @@
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
   loadModule('./specialty-transfers.js', 'SIRRO_SPECIALTY_TRANSFERS');
   loadModule('./appointment-role.js', 'SIRRO_APPOINTMENT_ROLE');
+  loadModule('./ce-referral-hint.js', 'SIRRO_CE_REFERRAL_HINT');
 })();
