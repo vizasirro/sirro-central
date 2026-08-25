@@ -54,4 +54,5 @@
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
   loadModule('./specialty-transfers.js', 'SIRRO_SPECIALTY_TRANSFERS');
+  loadModule('./appointment-role.js', 'SIRRO_APPOINTMENT_ROLE');
 })();
