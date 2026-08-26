@@ -28,14 +28,7 @@
   }
 
   function statusLabel(v){
-    return ({
-      EN_OBSERVACION:'Continúa en observación',
-      REEVALUADA:'Reevaluada',
-      INGRESO:'Se decide ingreso',
-      LABOR_PARTO:'Pasa a labor y parto',
-      ALTA:'Alta',
-      REFERENCIA:'Referencia/traslado'
-    })[v] || v || '';
+    return ({EN_OBSERVACION:'Continúa en observación',REEVALUADA:'Reevaluada',INGRESO:'Se decide ingreso',LABOR_PARTO:'Pasa a labor y parto',ALTA:'Alta',REFERENCIA:'Referencia/traslado'})[v] || v || '';
   }
 
   function obsHtml(t){
@@ -52,74 +45,32 @@
       if(next) detail += `<br>${due?'<strong>REEVALUACIÓN PENDIENTE:</strong>':'Próxima reevaluación:'} <strong>${esc(fmtObs(last.proxima_valoracion))}</strong>.`;
       else detail += '<br>Sin próxima reevaluación programada.';
     }
-    const action=closed?'':`<div class="actions"><button type="button" class="ghost" onclick="sirroOpenObsObstetrica('${t.id}')">${rows.length?'Registrar reevaluación':'Registrar primera valoración'}</button></div>`;
-    return `<div class="notice ${due?'error':''}"><strong>${title}</strong><br>${detail}${action}<small>Puede registrarlo personal autorizado del servicio obstétrico: Auxiliar de Enfermería, Licenciada de Enfermería o médico del servicio.</small></div>`;
+    const action=closed?'':`<div class="actions sirro-obs-main-action"><button type="button" class="sirro-obs-primary" onclick="sirroOpenObsObstetrica('${t.id}')">${rows.length?'Registrar reevaluación':'Registrar primera valoración'}</button></div>`;
+    return `<div class="notice sirro-obs-card ${due?'error':''}"><strong>${title}</strong><br>${detail}${action}<small>Puede registrarlo personal autorizado del servicio obstétrico: Auxiliar de Enfermería, Licenciada de Enfermería o médico del servicio.</small></div>`;
   }
+
+  const style=document.createElement('style');
+  style.textContent=`.sirro-obs-card{border:1px solid #c9ddd7;padding:16px!important}.sirro-obs-main-action{margin:14px 0 12px!important}.sirro-obs-primary{background:#0b6b57!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:12px 18px!important;font-size:16px!important;font-weight:800!important;line-height:1.2!important;box-shadow:0 2px 5px #0002!important;min-height:46px!important}.sirro-obs-primary:hover,.sirro-obs-primary:focus{filter:brightness(.92);outline:3px solid #b9d8cf;outline-offset:2px}@media(max-width:620px){.sirro-obs-primary{width:100%!important;font-size:16px!important}}`;
+  document.head.appendChild(style);
 
   const previousTramoItem = typeof tramoItem === 'function' ? tramoItem : null;
-  if(previousTramoItem){
-    tramoItem=function(t,withActions=true){
-      const html=previousTramoItem(t,withActions), extra=obsHtml(t);
-      if(!extra) return html;
-      const i=html.lastIndexOf('</div>');
-      return i>=0?html.slice(0,i)+extra+html.slice(i):html+extra;
-    };
-  }
-
+  if(previousTramoItem){tramoItem=function(t,withActions=true){const html=previousTramoItem(t,withActions),extra=obsHtml(t);if(!extra)return html;const i=html.lastIndexOf('</div>');return i>=0?html.slice(0,i)+extra+html.slice(i):html+extra;};}
   const previousRefresh = typeof refreshAll === 'function' ? refreshAll : null;
-  if(previousRefresh){
-    refreshAll=async function(){
-      await loadObs();
-      return previousRefresh.apply(this,arguments);
-    };
-  }
+  if(previousRefresh){refreshAll=async function(){await loadObs();return previousRefresh.apply(this,arguments);};}
 
-  function hnNow(){
-    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
-    const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-    return {date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour}:${p.minute}`};
-  }
-  function toHN(dateId,timeId){
-    const d=document.getElementById(dateId)?.value,t=document.getElementById(timeId)?.value;
-    return d&&t?`${d}T${t}:00-06:00`:null;
-  }
-  function setNextHours(hours){
-    const base=toHN('obs-current-date','obs-current-time') || new Date().toISOString();
-    const d=new Date(new Date(base).getTime()+hours*3600000);
-    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d);
-    const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-    const dd=document.getElementById('obs-next-date'),tt=document.getElementById('obs-next-time');
-    if(dd)dd.value=`${p.year}-${p.month}-${p.day}`;
-    if(tt)tt.value=`${p.hour}:${p.minute}`;
-  }
+  function hnNow(){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour}:${p.minute}`};}
+  function toHN(dateId,timeId){const d=document.getElementById(dateId)?.value,t=document.getElementById(timeId)?.value;return d&&t?`${d}T${t}:00-06:00`:null;}
+  function setNextHours(hours){const base=toHN('obs-current-date','obs-current-time') || new Date().toISOString();const d=new Date(new Date(base).getTime()+hours*3600000);const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d);const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));const dd=document.getElementById('obs-next-date'),tt=document.getElementById('obs-next-time');if(dd)dd.value=`${p.year}-${p.month}-${p.day}`;if(tt)tt.value=`${p.hour}:${p.minute}`;}
 
   window.sirroOpenObsObstetrica=function(id){
     const t=Array.isArray(tramos)?tramos.find(x=>String(x.id)===String(id)):null;
     if(!t||!isMaternal(t)||!isHospitalDestination(t)||isClosed(t)) return alert('Esta valoración obstétrica no está disponible para este caso.');
     document.getElementById('sirroObsObModal')?.remove();
     const n=hnNow(), rows=rowsFor(id), num=rows.length+1;
-    const box=document.createElement('div');
-    box.id='sirroObsObModal';
-    box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-    box.innerHTML=`<div class="card" style="max-width:620px;width:100%;max-height:92vh;overflow:auto"><h3>${num===1?'Primera valoración obstétrica':'Reevaluación obstétrica '+num}</h3><p class="muted">Registre únicamente fecha/hora y decisión administrativa. Tacto vaginal, foco fetal y demás hallazgos clínicos deben quedar en el expediente.</p><div class="formgrid"><label>Fecha de valoración<input id="obs-current-date" type="date" value="${n.date}"></label><label>Hora de valoración (24 h)<input id="obs-current-time" type="time" value="${n.time}"></label><label>Resultado<select id="obs-result"><option value="EN_OBSERVACION">Continúa en observación</option><option value="REEVALUADA">Reevaluada</option><option value="INGRESO">Se decide ingreso</option><option value="LABOR_PARTO">Pasa a labor y parto</option><option value="ALTA">Alta</option><option value="REFERENCIA">Referencia / traslado</option></select></label></div><h4>Próxima reevaluación (si corresponde)</h4><div class="formgrid"><label>Fecha<input id="obs-next-date" type="date"></label><label>Hora (24 h)<input id="obs-next-time" type="time"></label></div><div class="actions"><button type="button" class="ghost" onclick="sirroObsQuick(4)">+4 h</button><button type="button" class="ghost" onclick="sirroObsQuick(6)">+6 h</button><button type="button" class="ghost" onclick="sirroObsQuick(12)">+12 h</button><button type="button" class="ghost" onclick="sirroObsQuick(24)">+24 h</button></div><div class="notice"><small>Los accesos rápidos son solo una ayuda de programación; la hora real de reevaluación la determina el personal clínico según la condición materno-fetal.</small></div><div class="actions"><button type="button" class="primary" onclick="sirroSaveObsObstetrica('${id}')">Guardar</button><button type="button" class="ghost" onclick="document.getElementById('sirroObsObModal')?.remove()">Cancelar</button></div></div>`;
-    document.body.appendChild(box);
+    const box=document.createElement('div');box.id='sirroObsObModal';box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    box.innerHTML=`<div class="card" style="max-width:620px;width:100%;max-height:92vh;overflow:auto"><h3>${num===1?'Primera valoración obstétrica':'Reevaluación obstétrica '+num}</h3><p class="muted">Registre únicamente fecha/hora y decisión administrativa. Tacto vaginal, foco fetal y demás hallazgos clínicos deben quedar en el expediente.</p><div class="formgrid"><label>Fecha de valoración<input id="obs-current-date" type="date" value="${n.date}"></label><label>Hora de valoración (24 h)<input id="obs-current-time" type="time" value="${n.time}"></label><label>Resultado<select id="obs-result"><option value="EN_OBSERVACION">Continúa en observación</option><option value="REEVALUADA">Reevaluada</option><option value="INGRESO">Se decide ingreso</option><option value="LABOR_PARTO">Pasa a labor y parto</option><option value="ALTA">Alta</option><option value="REFERENCIA">Referencia / traslado</option></select></label></div><h4>Próxima reevaluación (si corresponde)</h4><div class="formgrid"><label>Fecha<input id="obs-next-date" type="date"></label><label>Hora (24 h)<input id="obs-next-time" type="time"></label></div><div class="actions"><button type="button" class="ghost" onclick="sirroObsQuick(4)">+4 h</button><button type="button" class="ghost" onclick="sirroObsQuick(6)">+6 h</button><button type="button" class="ghost" onclick="sirroObsQuick(12)">+12 h</button><button type="button" class="ghost" onclick="sirroObsQuick(24)">+24 h</button></div><div class="notice"><small>Los accesos rápidos son solo una ayuda de programación; la hora real de reevaluación la determina el personal clínico según la condición materno-fetal.</small></div><div class="actions"><button type="button" class="primary" onclick="sirroSaveObsObstetrica('${id}')">Guardar</button><button type="button" class="ghost" onclick="document.getElementById('sirroObsObModal')?.remove()">Cancelar</button></div></div>`;document.body.appendChild(box);
   };
   window.sirroObsQuick=setNextHours;
-
-  window.sirroSaveObsObstetrica=async function(id){
-    const current=toHN('obs-current-date','obs-current-time');
-    if(!current) return alert('Seleccione fecha y hora de la valoración.');
-    const nd=document.getElementById('obs-next-date')?.value, nt=document.getElementById('obs-next-time')?.value;
-    if((nd&&!nt)||(!nd&&nt)) return alert('Para programar la próxima reevaluación seleccione fecha y hora.');
-    const next=nd&&nt?`${nd}T${nt}:00-06:00`:null;
-    if(next && new Date(next)<=new Date(current)) return alert('La próxima reevaluación debe ser posterior a la valoración actual.');
-    const result=document.getElementById('obs-result')?.value||'EN_OBSERVACION';
-    const {error}=await sb.rpc('sirro_registrar_valoracion_obstetrica',{p_tramo:id,p_fecha_valoracion:current,p_proxima_valoracion:next,p_resultado:result});
-    if(error) return alert(error.message||'No se pudo registrar la valoración obstétrica.');
-    document.getElementById('sirroObsObModal')?.remove();
-    if(typeof refreshAll==='function') await refreshAll();
-    alert(next?'Valoración registrada. SIRRO mostrará la próxima reevaluación programada.':'Valoración registrada.');
-  };
-
+  window.sirroSaveObsObstetrica=async function(id){const current=toHN('obs-current-date','obs-current-time');if(!current)return alert('Seleccione fecha y hora de la valoración.');const nd=document.getElementById('obs-next-date')?.value,nt=document.getElementById('obs-next-time')?.value;if((nd&&!nt)||(!nd&&nt))return alert('Para programar la próxima reevaluación seleccione fecha y hora.');const next=nd&&nt?`${nd}T${nt}:00-06:00`:null;if(next&&new Date(next)<=new Date(current))return alert('La próxima reevaluación debe ser posterior a la valoración actual.');const result=document.getElementById('obs-result')?.value||'EN_OBSERVACION';const {error}=await sb.rpc('sirro_registrar_valoracion_obstetrica',{p_tramo:id,p_fecha_valoracion:current,p_proxima_valoracion:next,p_resultado:result});if(error)return alert(error.message||'No se pudo registrar la valoración obstétrica.');document.getElementById('sirroObsObModal')?.remove();if(typeof refreshAll==='function')await refreshAll();alert(next?'Valoración registrada. SIRRO mostrará la próxima reevaluación programada.':'Valoración registrada.');};
   loadObs().then(()=>{if(typeof renderReceived==='function')renderReceived();if(typeof renderTracking==='function')renderTracking();});
 })();
