@@ -47,7 +47,7 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-5', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-6', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
   function loadModule(src, marker) {
     if (window[marker] || document.querySelector(`script[src="${src}"]`)) return;
@@ -68,6 +68,7 @@
   loadModule('./appointment-role.js', 'SIRRO_APPOINTMENT_ROLE');
   loadModule('./ce-referral-hint.js', 'SIRRO_CE_REFERRAL_HINT');
   loadModule('./hospital-profile.js', 'SIRRO_HOSPITAL_PROFILE');
+  loadModule('./obstetric-hospitalization-guard.js', 'SIRRO_OBSTETRIC_HOSPITAL_GUARD');
   loadModule('./gerencia-profile.js', 'SIRRO_GERENCIA_PROFILE');
   loadModule('./administrador-profile.js', 'SIRRO_ADMINISTRADOR_PROFILE');
   loadModule('./maternal-monitor.js', '__sirroMaternalMonitorLoaded');
