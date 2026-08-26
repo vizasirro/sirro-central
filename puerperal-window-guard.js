@@ -15,24 +15,31 @@
     if(!windowOpen(s)) return alert(`Este control todavía no puede registrarse. Se habilitará a partir de ${new Date(s.ventana_desde).toLocaleString('es-HN',{timeZone:'America/Tegucigalpa',hour12:false})}.`);
     if(typeof originalComplete==='function') return originalComplete(id,n);
   };
-
-  // Regla de integridad: el primer registro del parto es directo; cualquier cambio posterior
-  // queda bloqueado en la interfaz y también en el punto de entrada de la acción.
   window.registerDelivery = async function(id){
     const s=await getRow(id,1);
     if(s?.fecha_base) return alert('La fecha y hora del parto ya fueron registradas y están bloqueadas. Para modificarlas se requiere una corrección administrativa autorizada y auditada.');
     if(typeof originalRegisterDelivery==='function') return originalRegisterDelivery(id);
   };
 
+  const style=document.createElement('style');
+  style.textContent=`.sirro-delivery-registered{background:#fff1f1!important;border:2px solid #d61f1f!important;color:#7f1010!important}.sirro-delivery-registered>:scope{}.sirro-delivery-registered>strong{color:#c51616!important;font-size:18px!important}.sirro-delivery-registered .sirro-delivery-value{margin:10px 0 8px;padding:12px 15px;background:#fff7f7;border:1px solid #ee9a9a;border-radius:10px;color:#b31313;font-size:20px;font-weight:900}.sirro-delivery-registered .sirro-delivery-badge{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:999px;background:#d61f1f;color:#fff;font-size:11px;font-weight:900;vertical-align:2px}.sirro-delivery-registered .sirro-delivery-lock{background:#fff7f7!important;border:1px solid #ee9a9a!important;color:#761010!important;margin-top:10px!important}`;
+  document.head.appendChild(style);
+
   function lockRegisteredDeliveryBoxes(){
     document.querySelectorAll('.notice').forEach(box=>{
       const strong=box.querySelector(':scope > strong');
       if(!strong||strong.textContent.trim()!=='Fecha y hora del parto'||!box.textContent.includes('Registrada:'))return;
-      box.querySelectorAll('input[id^="parto-"]').forEach(el=>{el.disabled=true;el.readOnly=true;});
-      box.querySelectorAll('button').forEach(btn=>{
-        const oc=btn.getAttribute('onclick')||'';
-        if(oc.includes('setNowClinical')||oc.includes('registerDelivery'))btn.remove();
-      });
+      box.classList.add('sirro-delivery-registered');
+      const textNodes=[...box.childNodes];
+      const regNode=textNodes.find(n=>n.nodeType===Node.TEXT_NODE && n.textContent.includes('Registrada:'));
+      let registered='';
+      if(regNode){registered=regNode.textContent.replace(/^\s*Registrada:\s*/,'').trim();regNode.remove();}
+      if(!registered){const m=box.textContent.match(/Registrada:\s*([^\n]+)/);if(m)registered=m[1].trim();}
+      if(!strong.querySelector('.sirro-delivery-badge')) strong.insertAdjacentHTML('beforeend',' <span class="sirro-delivery-badge">PARTO REGISTRADO</span>');
+      if(registered&&!box.querySelector('.sirro-delivery-value')) strong.insertAdjacentHTML('afterend',`<div class="sirro-delivery-value">Fecha y hora registrada: ${registered}</div>`);
+      box.querySelectorAll('input[id^="parto-"]').forEach(el=>{const lab=el.closest('label');if(lab)lab.remove();else el.remove();});
+      box.querySelectorAll('button').forEach(btn=>{const oc=btn.getAttribute('onclick')||'';if(oc.includes('setNowClinical')||oc.includes('registerDelivery'))btn.remove();});
+      [...box.querySelectorAll('.formgrid')].forEach(g=>{if(!g.querySelector('input,select,textarea,button'))g.remove();});
       if(!box.querySelector('.sirro-delivery-lock')){
         const note=document.createElement('div');note.className='notice sirro-delivery-lock';
         note.innerHTML='<small><strong>Dato bloqueado después del registro.</strong> Cualquier cambio de fecha u hora del parto requiere gestión administrativa autorizada y auditada. La corrección deberá conservar el valor anterior, el nuevo valor, motivo, solicitante, autorizador y fecha/hora; los controles futuros se recalculan sin alterar controles ya realizados.</small>';
