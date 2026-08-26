@@ -3,6 +3,7 @@
 
   const ROLES = Object.freeze({
     ADMIN_REGIONAL: 'ADMIN_REGIONAL',
+    ADMINISTRADOR: 'ADMINISTRADOR',
     ECOR: 'ECOR',
     JEFE_MUNICIPAL: 'JEFE_MUNICIPAL',
     USUARIO_US: 'USUARIO_US',
@@ -34,10 +35,11 @@
 
   const authz = Object.freeze({
     isAdminRegional(profileValue) { return profileValue?.rol === ROLES.ADMIN_REGIONAL; },
+    isAdministrador(profileValue) { return profileValue?.rol === ROLES.ADMINISTRADOR; },
     isHospital(profileValue) { return profileValue?.rol === ROLES.USUARIO_HOSPITAL; }
   });
 
-  window.SIRRO = Object.freeze({ version: 'core-3', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-4', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
   function loadModule(src, marker) {
     if (window[marker] || document.querySelector(`script[src="${src}"]`)) return;
@@ -58,6 +60,7 @@
   loadModule('./ce-referral-hint.js', 'SIRRO_CE_REFERRAL_HINT');
   loadModule('./hospital-profile.js', 'SIRRO_HOSPITAL_PROFILE');
   loadModule('./gerencia-profile.js', 'SIRRO_GERENCIA_PROFILE');
+  loadModule('./administrador-profile.js', 'SIRRO_ADMINISTRADOR_PROFILE');
   loadModule('./maternal-monitor.js', '__sirroMaternalMonitorLoaded');
   loadModule('./maternal-monitor-style.js', 'SIRRO_MATERNAL_MONITOR_STYLE');
 })();
