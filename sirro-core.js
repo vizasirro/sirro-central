@@ -57,5 +57,6 @@
   loadModule('./appointment-role.js', 'SIRRO_APPOINTMENT_ROLE');
   loadModule('./ce-referral-hint.js', 'SIRRO_CE_REFERRAL_HINT');
   loadModule('./hospital-profile.js', 'SIRRO_HOSPITAL_PROFILE');
+  loadModule('./gerencia-profile.js', 'SIRRO_GERENCIA_PROFILE');
   loadModule('./maternal-monitor.js', '__sirroMaternalMonitorLoaded');
 })();
