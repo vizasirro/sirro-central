@@ -3,7 +3,7 @@
   const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
   const isCeCase = c => norm(c?.motivo).startsWith('CE_');
   const ceRowsFor = id => (typeof followups!=='undefined'&&Array.isArray(followups)?followups:[]).filter(s=>String(s.tramo_id)===String(id)&&s.tipo==='CONSULTA_EXTERNA');
-  const hasScheduledCe = id => ceRowsFor(id).some(s=>s.estado==='PROGRAMADA'&&s.fecha_cita);
+  const hasScheduledCe = (id,html='') => ceRowsFor(id).some(s=>s.estado==='PROGRAMADA'&&s.fecha_cita) || /Cita programada para/i.test(String(html));
 
   function specialtyLabel(c){
     const m=norm(c?.motivo);
@@ -25,7 +25,7 @@
       const eligible=!!c&&isCeCase(c)&&profile?.establecimiento_id===t?.establecimiento_destino_id&&['ENVIADO','RECIBIDO','EN_ATENCION'].includes(String(t?.estado_actual||''));
       if(!eligible) return html;
       if(html.includes(`assignCeAppointment('${t.id}')`)) return html;
-      const scheduled=hasScheduledCe(t.id);
+      const scheduled=hasScheduledCe(t.id,html);
       const pos=html.lastIndexOf('</div>');
       const action=`<div class="actions"><button type="button" class="primary" onclick="assignCeAppointment('${t.id}')">${scheduled?'REPROGRAMAR CITA':'ASIGNAR CITA'}</button></div>`;
       return pos>=0?html.slice(0,pos)+action+html.slice(pos):html+action;
@@ -43,6 +43,10 @@
     document.querySelectorAll('button[onclick]').forEach(b=>{
       const h=b.getAttribute('onclick')||'';
       if(/receiveTramo|rejectTramo|evaluateTramo|answerTramo|secondaryTramo|sirroTransferSpecialty|requestSpecialtyTransfer/i.test(h)) b.remove();
+      if(/assignCeAppointment/i.test(h)){
+        const card=b.closest('.item,.card')||b.parentElement?.parentElement;
+        if(card&&/Cita programada para/i.test(card.textContent||'')) b.textContent='REPROGRAMAR CITA';
+      }
     });
   }
 
@@ -69,7 +73,7 @@
       const t=(typeof tramos!=='undefined'?tramos:[]).find(x=>String(x.id)===String(id));
       const c=t&&typeof caseOf==='function'?caseOf(t.caso_id):null;
       if(!t||!c||!isCeCase(c)) return alert('No se encontró una referencia de Consulta Externa válida.');
-      const label=specialtyLabel(c), existing=ceRowsFor(id).find(s=>s.estado==='PROGRAMADA'&&s.fecha_cita), reprogram=!!existing;
+      const label=specialtyLabel(c), reprogram=hasScheduledCe(id,document.body?.innerText||'');
       document.getElementById('sirroDateTimeModal')?.remove();
       const box=document.createElement('div');
       box.id='sirroDateTimeModal';
@@ -90,18 +94,9 @@
   }
 
   function install(){
-    installGuards();
-    installTramoAppointmentButton();
-    patchRender('renderReceived');
-    patchRender('renderTracking');
-    patchRender('renderStats');
-    installAppointmentModal();
-    applyCitasUi();
+    installGuards();installTramoAppointmentButton();patchRender('renderReceived');patchRender('renderTracking');patchRender('renderStats');installAppointmentModal();applyCitasUi();
   }
-
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true}); else install();
-  window.addEventListener('pageshow',install);
-  window.addEventListener('sirro-specialty-filtered',install);
-  setInterval(install,1200);
+  window.addEventListener('pageshow',install);window.addEventListener('sirro-specialty-filtered',install);setInterval(install,1200);
   window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi});
 })();
