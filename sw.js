@@ -1,5 +1,11 @@
-const CACHE='sirro-v042';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./app-main.js','./sirro-core.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js','./followup.js','./reportes.js','./pendientes.js','./admin-pruebas.js','./specialty-selector-fix.js'];
+const CACHE='sirro-v043';
+const ASSETS=[
+  './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg',
+  './app-main.js','./sirro-core.js','./startup-ready.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js',
+  './followup.js','./observacion-obstetrica.js','./reportes.js','./pendientes.js','./admin-pruebas.js','./borrado-referencia-pruebas.js',
+  './specialty-filter.js','./specialty-transfers.js','./specialty-selector-fix.js','./appointment-role.js','./ce-referral-hint.js',
+  './hospital-profile.js','./gerencia-profile.js','./administrador-profile.js','./maternal-monitor.js','./maternal-monitor-style.js'
+];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
