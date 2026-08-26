@@ -10,6 +10,7 @@
   });
   const SPECIALTIES=['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia'];
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  // Compatibilidad: usuarios antiguos con DIRECCIÓN HOSPITAL conservan su acceso de solo supervisión.
   const isDirection=p=>p?.rol==='USUARIO_HOSPITAL'&&norm(p?.cargo_funcion)==='DIRECCION HOSPITAL';
 
   function ensureCreateControls(){
@@ -20,7 +21,6 @@
     wrap.className='hidden';
     wrap.innerHTML=`Tipo de usuario hospitalario<select id="newHospitalUserType">
       <option value="">Seleccione</option>
-      <option value="DIRECCION_HOSPITAL">DIRECCIÓN HOSPITAL</option>
       <option value="MEDICO_ESPECIALISTA">Médico especialista</option>
       <option value="LIC_ENFERMERIA">Licenciada en Enfermería</option>
       <option value="AUX_ENFERMERIA">Auxiliar de Enfermería</option>
@@ -44,8 +44,7 @@
       spec.classList.toggle('hidden',!specialist);
       job.readOnly=true;
       job.placeholder='Se completa según el tipo de usuario hospitalario';
-      if(type.value==='DIRECCION_HOSPITAL')job.value=TYPES.DIRECCION_HOSPITAL;
-      else if(type.value==='LIC_ENFERMERIA')job.value=TYPES.LIC_ENFERMERIA;
+      if(type.value==='LIC_ENFERMERIA')job.value=TYPES.LIC_ENFERMERIA;
       else if(type.value==='AUX_ENFERMERIA')job.value=TYPES.AUX_ENFERMERIA;
       else if(type.value==='GESTION_CITAS')job.value=TYPES.GESTION_CITAS;
       else if(type.value==='MEDICO_ESPECIALISTA')job.value=specialty.value&&specialty.value!=='OTRO'?`${TYPES.MEDICO_ESPECIALISTA} · ${specialty.value}`:'';
@@ -73,11 +72,9 @@
   }
 
   function applyDirectionNavigation(){
-    if(typeof profile==='undefined'||!profile)return;
-    if(!isDirection(profile))return;
+    if(typeof profile==='undefined'||!profile||!isDirection(profile))return;
     ['nueva','recibidas'].forEach(tab=>document.querySelector(`#tabs button[data-tab="${tab}"]`)?.classList.add('hidden'));
   }
-
   function removeDirectionClinicalActions(){
     if(typeof profile==='undefined'||!isDirection(profile))return;
     document.querySelectorAll('#trackingList .actions button, #receivedList .actions button').forEach(b=>b.remove());
@@ -91,7 +88,5 @@
   if(previousReceived){renderReceived=function(){const r=previousReceived.apply(this,arguments);removeDirectionClinicalActions();return r;};}
 
   window.SIRRO_HOSPITAL_PROFILE=Object.freeze({TYPES,isDirection});
-  ensureCreateControls();
-  applyDirectionNavigation();
-  removeDirectionClinicalActions();
+  ensureCreateControls();applyDirectionNavigation();removeDirectionClinicalActions();
 })();
