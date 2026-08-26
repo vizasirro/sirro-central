@@ -59,4 +59,5 @@
   loadModule('./hospital-profile.js', 'SIRRO_HOSPITAL_PROFILE');
   loadModule('./gerencia-profile.js', 'SIRRO_GERENCIA_PROFILE');
   loadModule('./maternal-monitor.js', '__sirroMaternalMonitorLoaded');
+  loadModule('./maternal-monitor-style.js', 'SIRRO_MATERNAL_MONITOR_STYLE');
 })();
