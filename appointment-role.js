@@ -2,6 +2,8 @@
   const isCitas = () => typeof profile !== 'undefined' && profile?.rol === 'USUARIO_HOSPITAL' && profile?.tipo_usuario_hospital === 'ATENCION_PACIENTE_CITAS';
   const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
   const isCeCase = c => norm(c?.motivo).startsWith('CE_');
+  const ceRowsFor = id => (typeof followups!=='undefined'&&Array.isArray(followups)?followups:[]).filter(s=>String(s.tramo_id)===String(id)&&s.tipo==='CONSULTA_EXTERNA');
+  const hasScheduledCe = id => ceRowsFor(id).some(s=>s.estado==='PROGRAMADA'&&s.fecha_cita);
 
   function specialtyLabel(c){
     const m=norm(c?.motivo);
@@ -23,8 +25,9 @@
       const eligible=!!c&&isCeCase(c)&&profile?.establecimiento_id===t?.establecimiento_destino_id&&['ENVIADO','RECIBIDO','EN_ATENCION'].includes(String(t?.estado_actual||''));
       if(!eligible) return html;
       if(html.includes(`assignCeAppointment('${t.id}')`)) return html;
+      const scheduled=hasScheduledCe(t.id);
       const pos=html.lastIndexOf('</div>');
-      const action=`<div class="actions"><button type="button" class="primary" onclick="assignCeAppointment('${t.id}')">ASIGNAR CITA</button></div>`;
+      const action=`<div class="actions"><button type="button" class="primary" onclick="assignCeAppointment('${t.id}')">${scheduled?'REPROGRAMAR CITA':'ASIGNAR CITA'}</button></div>`;
       return pos>=0?html.slice(0,pos)+action+html.slice(pos):html+action;
     };
     wrapped.__sirroCitasButton=true;
@@ -66,12 +69,12 @@
       const t=(typeof tramos!=='undefined'?tramos:[]).find(x=>String(x.id)===String(id));
       const c=t&&typeof caseOf==='function'?caseOf(t.caso_id):null;
       if(!t||!c||!isCeCase(c)) return alert('No se encontró una referencia de Consulta Externa válida.');
-      const label=specialtyLabel(c);
+      const label=specialtyLabel(c), existing=ceRowsFor(id).find(s=>s.estado==='PROGRAMADA'&&s.fecha_cita), reprogram=!!existing;
       document.getElementById('sirroDateTimeModal')?.remove();
       const box=document.createElement('div');
       box.id='sirroDateTimeModal';
       box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-      box.innerHTML=`<div class="card" style="max-width:540px;width:100%"><h3>Programar cita de Consulta Externa</h3><div class="readonlybox"><strong>Especialidad solicitada:</strong> ${typeof esc==='function'?esc(label):label}</div><div class="actions" style="align-items:end;gap:8px;flex-wrap:wrap;margin-top:10px"><label style="margin:0">Fecha de la cita<input id="ce-${id}-date" type="date" required></label><label style="margin:0">Hora de la cita (24 h)<input id="ce-${id}-time" type="time" step="60" required></label></div><div class="actions"><button class="primary" onclick="saveCeDateTime('${id}')">Guardar cita</button><button class="ghost" onclick="closeClinicalDateTime()">Cancelar</button></div></div>`;
+      box.innerHTML=`<div class="card" style="max-width:540px;width:100%"><h3>${reprogram?'Reprogramar':'Programar'} cita de Consulta Externa</h3><div class="readonlybox"><strong>Especialidad solicitada:</strong> ${typeof esc==='function'?esc(label):label}</div>${reprogram?'<div class="notice"><small>La cita ya está programada. Esta acción modificará su fecha y/o hora y conservará el registro administrativo correspondiente.</small></div>':''}<div class="actions" style="align-items:end;gap:8px;flex-wrap:wrap;margin-top:10px"><label style="margin:0">Fecha de la cita<input id="ce-${id}-date" type="date" required></label><label style="margin:0">Hora de la cita (24 h)<input id="ce-${id}-time" type="time" step="60" required></label></div><div class="actions"><button class="primary" onclick="saveCeDateTime('${id}')">${reprogram?'Guardar reprogramación':'Guardar cita'}</button><button class="ghost" onclick="closeClinicalDateTime()">Cancelar</button></div></div>`;
       document.body.appendChild(box);
     };
     wrapped.__sirroCitasSpecialty=true;
