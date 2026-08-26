@@ -1,6 +1,7 @@
 (() => {
   const isCitas = () => typeof profile !== 'undefined' && profile?.rol === 'USUARIO_HOSPITAL' && profile?.tipo_usuario_hospital === 'ATENCION_PACIENTE_CITAS';
   const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const isCeCase = c => norm(c?.motivo).startsWith('CE_');
 
   function specialtyLabel(c){
     const m=norm(c?.motivo);
@@ -12,13 +13,33 @@
     return c?.servicio_requerido || 'Consulta Externa';
   }
 
+  function installTramoAppointmentButton(){
+    const fn=window.tramoItem;
+    if(typeof fn!=='function'||fn.__sirroCitasButton)return;
+    const wrapped=function(t,withActions=true){
+      let html=fn.apply(this,arguments);
+      if(!isCitas()||!withActions) return html;
+      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
+      const eligible=!!c&&isCeCase(c)&&profile?.establecimiento_id===t?.establecimiento_destino_id&&['ENVIADO','RECIBIDO','EN_ATENCION'].includes(String(t?.estado_actual||''));
+      if(!eligible) return html;
+      if(html.includes(`assignCeAppointment('${t.id}')`)) return html;
+      const pos=html.lastIndexOf('</div>');
+      const action=`<div class="actions"><button type="button" class="primary" onclick="assignCeAppointment('${t.id}')">ASIGNAR CITA</button></div>`;
+      return pos>=0?html.slice(0,pos)+action+html.slice(pos):html+action;
+    };
+    wrapped.__sirroCitasButton=true;
+    window.tramoItem=wrapped;
+  }
+
   function applyCitasUi(){
     if(!isCitas()) return;
     const nueva=document.querySelector('#tabs button[data-tab="nueva"]');
     if(nueva) nueva.classList.add('hidden');
+    const transfers=document.getElementById('sirroTransfersCard');
+    if(transfers) transfers.classList.add('hidden');
     document.querySelectorAll('button[onclick]').forEach(b=>{
       const h=b.getAttribute('onclick')||'';
-      if(/receiveTramo|rejectTramo|evaluateTramo|answerTramo|secondaryTramo|transferSpecialty|requestSpecialtyTransfer/i.test(h)) b.remove();
+      if(/receiveTramo|rejectTramo|evaluateTramo|answerTramo|secondaryTramo|sirroTransferSpecialty|requestSpecialtyTransfer/i.test(h)) b.remove();
     });
   }
 
@@ -44,7 +65,7 @@
     const wrapped=async function(id){
       const t=(typeof tramos!=='undefined'?tramos:[]).find(x=>String(x.id)===String(id));
       const c=t&&typeof caseOf==='function'?caseOf(t.caso_id):null;
-      if(!t||!c) return alert('No se encontró la referencia.');
+      if(!t||!c||!isCeCase(c)) return alert('No se encontró una referencia de Consulta Externa válida.');
       const label=specialtyLabel(c);
       document.getElementById('sirroDateTimeModal')?.remove();
       const box=document.createElement('div');
@@ -60,13 +81,14 @@
   function patchRender(name){
     const fn=window[name];
     if(typeof fn!=='function'||fn.__sirroCitasPatched)return;
-    const wrapped=function(){const r=fn.apply(this,arguments);queueMicrotask(applyCitasUi);return r;};
+    const wrapped=function(){const r=fn.apply(this,arguments);queueMicrotask(()=>{applyCitasUi();});return r;};
     wrapped.__sirroCitasPatched=true;
     window[name]=wrapped;
   }
 
   function install(){
     installGuards();
+    installTramoAppointmentButton();
     patchRender('renderReceived');
     patchRender('renderTracking');
     patchRender('renderStats');
@@ -78,5 +100,5 @@
   window.addEventListener('pageshow',install);
   window.addEventListener('sirro-specialty-filtered',install);
   setInterval(install,1200);
-  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,applyCitasUi});
+  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi});
 })();
