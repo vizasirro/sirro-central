@@ -93,8 +93,13 @@
     window[name]=wrapped;
   }
 
+  function loadCeNotificationUi(){
+    if(document.querySelector('script[src="./ce-notification-ui.js"]'))return;
+    const s=document.createElement('script');s.src='./ce-notification-ui.js';s.defer=true;document.head.appendChild(s);
+  }
+
   function install(){
-    installGuards();installTramoAppointmentButton();patchRender('renderReceived');patchRender('renderTracking');patchRender('renderStats');installAppointmentModal();applyCitasUi();
+    loadCeNotificationUi();installGuards();installTramoAppointmentButton();patchRender('renderReceived');patchRender('renderTracking');patchRender('renderStats');installAppointmentModal();applyCitasUi();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true}); else install();
   window.addEventListener('pageshow',install);window.addEventListener('sirro-specialty-filtered',install);setInterval(install,1200);
