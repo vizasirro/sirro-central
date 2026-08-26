@@ -18,14 +18,14 @@
   function canSeeMaternalMonitor(){
     if (!profile) return false;
     if (profile.rol === 'AUDITOR_CONSULTA') return !!profile.permiso_centro_monitoria;
-    return ['ADMIN_REGIONAL','ECOR','JEFE_MUNICIPAL','USUARIO_US','USUARIO_HOSPITAL'].includes(profile.rol);
+    return ['ADMIN_REGIONAL','ADMINISTRADOR','ECOR','JEFE_MUNICIPAL','USUARIO_US','USUARIO_HOSPITAL'].includes(profile.rol);
   }
 
   function inScope(t){
     if (!isMaternalTramo(t) || !profile) return false;
     const c = caseForTramo(t);
     const origin = facilityFor(c?.establecimiento_origen_inicial_id || t.establecimiento_origen_id);
-    if (profile.rol === 'ADMIN_REGIONAL') return true;
+    if (['ADMIN_REGIONAL','ADMINISTRADOR'].includes(profile.rol)) return true;
     if (profile.rol === 'USUARIO_HOSPITAL') return profile.establecimiento_id === t.establecimiento_destino_id || profile.establecimiento_id === t.establecimiento_origen_id;
     if (profile.rol === 'USUARIO_US') return profile.establecimiento_id === c?.establecimiento_origen_inicial_id;
     if (profile.rol === 'ECOR') return !!origin && origin.ecor_id === profile.ecor_id;
@@ -131,7 +131,7 @@
 
   function scopeText(){
     if(!profile)return '';
-    if(profile.rol==='ADMIN_REGIONAL')return 'Alcance: todo el departamento de Olancho.';
+    if(['ADMIN_REGIONAL','ADMINISTRADOR'].includes(profile.rol))return 'Alcance: todo el departamento de Olancho.';
     if(profile.rol==='ECOR')return `Alcance: ECOR ${ecorFor(profile.ecor_id)?.nombre||''}.`;
     if(profile.rol==='JEFE_MUNICIPAL')return `Alcance: municipio ${municipioFor(profile.municipio_id)?.nombre||''}.`;
     if(profile.rol==='USUARIO_HOSPITAL')return `Alcance: pacientes atendidas por ${facilityFor(profile.establecimiento_id)?.nombre||'este hospital'}.`;
