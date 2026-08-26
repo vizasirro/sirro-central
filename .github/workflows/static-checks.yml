@@ -12,13 +12,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
         run: |
-          node --check app-main.js
-          node --check sirro-core.js
-          node --check followup.js
-          node --check pendientes.js
-          node --check reportes.js
-          node --check admin-pruebas.js
-          node --check sw.js
+          set -e
+          for f in \
+            app-main.js sirro-core.js startup-ready.js auth-security.js data-resilience.js \
+            pending-color-semantics.js followup.js reportes.js pendientes.js admin-pruebas.js \
+            borrado-referencia-pruebas.js specialty-filter.js specialty-transfers.js specialty-selector-fix.js \
+            appointment-role.js ce-referral-hint.js hospital-profile.js gerencia-profile.js administrador-profile.js \
+            maternal-monitor.js maternal-monitor-style.js observacion-obstetrica.js sw.js; do
+            node --check "$f"
+          done
       - name: Protect retired RPCs from new frontend use
         shell: bash
         run: |
@@ -45,18 +47,32 @@ jobs:
         shell: bash
         run: |
           set -e
-          if grep -RInE '(service_role|SUPABASE_SERVICE_ROLE|serviceRoleKey|postgres(ql)?://[^[:space:]"'"']+:[^[:space:]"'"']+@)' --include='*.js' --include='*.html' --include='*.json' . --exclude-dir=node_modules --exclude-dir=.git; then
-            echo 'CANDADO SIRRO: se detectó un secreto privilegiado o credencial de base de datos en código público.'
+          if grep -RInE 'service_role|SUPABASE_SERVICE_ROLE|serviceRoleKey' --include='*.js' --include='*.html' --include='*.json' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo 'CANDADO SIRRO: se detectó un secreto privilegiado en código público.'
+            exit 1
+          fi
+          if grep -RInE 'postgres(ql)?://[^[:space:]]+@' --include='*.js' --include='*.html' --include='*.json' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo 'CANDADO SIRRO: se detectó una credencial de base de datos en código público.'
             exit 1
           fi
       - name: CANDADO SIRRO - prohibit privileged Auth administration in browser
         shell: bash
         run: |
           set -e
-          if grep -RInE '(auth\.admin\.|createClient\([^)]*service_role)' --include='*.js' --include='*.html' . --exclude-dir=node_modules --exclude-dir=.git; then
+          if grep -RInE 'auth\.admin\.|createClient\([^)]*service_role' --include='*.js' --include='*.html' . --exclude-dir=node_modules --exclude-dir=.git; then
             echo 'CANDADO SIRRO: operaciones administrativas de Auth no pueden ejecutarse desde el navegador.'
             exit 1
           fi
+      - name: Startup contracts
+        shell: bash
+        run: |
+          set -e
+          grep -q "startup-ready.js" sirro-core.js
+          grep -q "ADMINISTRADOR" sirro-core.js
+          grep -q "SIRRO_STARTUP_READY" startup-ready.js
+          grep -q "sirro-v043" sw.js
+          grep -q "administrador-profile.js" sw.js
+          grep -q "maternal-monitor.js" sw.js
       - name: CANDADO SIRRO - security contract
         shell: bash
         run: |
