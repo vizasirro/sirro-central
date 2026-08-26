@@ -29,12 +29,12 @@
   function protectUI(){
     addRoleOption();
     if(!isOperational())return;
-    document.querySelector('.user-form-extra')?.classList.add('hidden');
+    const extra=document.querySelector('.user-form-extra');
+    if(extra&&!extra.classList.contains('hidden'))extra.classList.add('hidden');
     document.querySelectorAll('[data-delete-user],#setResetKeyBtn,#resetAllBtn').forEach(x=>x.remove());
-    document.querySelector('button[data-tab="usuarios"]')?.classList.remove('hidden');
-    document.querySelector('button[data-tab="auditoria"]')?.classList.remove('hidden');
-    document.querySelector('button[data-tab="evaluacion"]')?.classList.remove('hidden');
-    const meta=document.getElementById('userMeta');if(meta&&profile)meta.textContent=['Administrador',profile.cargo_funcion].filter(Boolean).join(' · ');
+    ['usuarios','auditoria','evaluacion'].forEach(tab=>document.querySelector(`button[data-tab="${tab}"]`)?.classList.remove('hidden'));
+    const meta=document.getElementById('userMeta');
+    if(meta&&profile){const text=['Administrador',profile.cargo_funcion].filter(Boolean).join(' · ');if(meta.textContent!==text)meta.textContent=text;}
   }
 
   const baseRenderUsers=typeof renderUsers==='function'?renderUsers:null;
@@ -55,9 +55,10 @@
 
   const baseConfigure=typeof configureTabs==='function'?configureTabs:null;
   if(baseConfigure){configureTabs=function(){const r=baseConfigure.apply(this,arguments);protectUI();return r;};}
-  const obs=new MutationObserver(()=>protectUI());
-  if(document.body)obs.observe(document.body,{childList:true,subtree:true});
-  else document.addEventListener('DOMContentLoaded',()=>obs.observe(document.body,{childList:true,subtree:true}),{once:true});
+
   addRoleOption();protectUI();
+  document.addEventListener('DOMContentLoaded',protectUI,{once:true});
+  setTimeout(protectUI,250);
+  setTimeout(protectUI,1200);
   window.SIRRO_ADMINISTRADOR_PROFILE=Object.freeze({isOperational,isRegional});
 })();
