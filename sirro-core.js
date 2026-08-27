@@ -47,10 +47,10 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-8', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-9', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
-  // Actualización informativa visible únicamente en la pantalla de ingreso.
-  // No modifica autenticación, permisos, rutas ni flujos operativos.
+  // Información pública visible únicamente en la pantalla de ingreso.
+  // No modifica autenticación, permisos, rutas ni flujos operativos de SIRRO.
   function renderPublicUpdate() {
     try {
       const loginView = document.getElementById('loginView');
@@ -75,6 +75,29 @@
       const loginMsg = document.getElementById('loginMsg');
       if (loginMsg) loginView.insertBefore(panel, loginMsg);
       else loginView.appendChild(panel);
+
+      // Portal Regional: contenedor independiente y ampliable para futuros enlaces útiles.
+      // Regla de Plata: estos accesos son solo enlaces; no comparten datos, usuarios ni permisos con SIRRO.
+      if (!document.getElementById('sirroRegionalPortal')) {
+        const portal = document.createElement('section');
+        portal.id = 'sirroRegionalPortal';
+        portal.style.cssText = 'margin-top:14px;text-align:left;border:1px solid #d7e4e0;border-radius:12px;background:#fff;padding:12px;';
+        portal.innerHTML = `
+          <div style="font-weight:900;color:#0b6b57;font-size:14px;">Portal Regional de Olancho</div>
+          <div style="margin-top:3px;font-size:12px;line-height:1.4;color:#607a74;">Acceso progresivo a herramientas digitales de utilidad para la Región Sanitaria de Olancho.</div>
+          <div style="margin-top:10px;display:grid;gap:8px;">
+            <div style="border:1px solid #e0ebe8;border-radius:9px;padding:9px 10px;background:#f8fbfa;">
+              <div style="font-weight:800;color:#234f46;">SIRRO · Referencia y Respuesta</div>
+              <div style="font-size:12px;color:#6b7f7a;margin-top:2px;">Sistema actualmente disponible en este portal.</div>
+            </div>
+            <div style="border:1px dashed #cbdcd7;border-radius:9px;padding:9px 10px;background:#fbfdfc;">
+              <div style="font-weight:800;color:#49675f;">Encuestas de Satisfacción</div>
+              <div style="font-size:12px;color:#7a8c87;margin-top:2px;">Próximamente · sistema independiente.</div>
+            </div>
+            <div style="font-size:11px;color:#81918d;padding:2px 3px;">Este espacio queda preparado para incorporar nuevas herramientas regionales sin modificar los sistemas existentes.</div>
+          </div>`;
+        loginView.appendChild(portal);
+      }
     } catch (error) {
       console.warn('No se pudo mostrar la actualización pública de SIRRO.', error);
     }
