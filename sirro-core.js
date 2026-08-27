@@ -47,7 +47,40 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-7', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-8', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+
+  // Actualización informativa visible únicamente en la pantalla de ingreso.
+  // No modifica autenticación, permisos, rutas ni flujos operativos.
+  function renderPublicUpdate() {
+    try {
+      const loginView = document.getElementById('loginView');
+      if (!loginView || document.getElementById('sirroPublicUpdate')) return;
+
+      const panel = document.createElement('details');
+      panel.id = 'sirroPublicUpdate';
+      panel.style.cssText = 'margin-top:14px;text-align:left;border:1px solid #d7e4e0;border-radius:10px;background:#f7fbfa;padding:10px 12px;';
+      panel.innerHTML = `
+        <summary style="cursor:pointer;font-weight:800;color:#0b6b57;">Capacidades actuales de SIRRO · agosto 2026</summary>
+        <div style="margin-top:9px;font-size:13px;line-height:1.45;color:#47665f;">
+          <div>• Seguimiento por código de referencia y cierre administrativo del ciclo.</div>
+          <div>• Gestión hospitalaria por especialidad: Pediatría, Gineco-Obstetricia, Medicina Interna, Cirugía, Ortopedia y otras.</div>
+          <div>• Programación de citas con fecha y hora, respuesta al establecimiento de origen y notificaciones.</div>
+          <div>• Transferencias entre especialidades conservando el mismo hilo de referencia.</div>
+          <div>• Flujo obstétrico con hospitalización, fecha y hora de parto y seguimiento puerperal.</div>
+          <div>• Perfiles y permisos diferenciados para personal hospitalario, unidades de salud, ECOR, municipios y consulta.</div>
+          <div>• Recuperación de contraseña, AYUDA por rol y preferencias personales de notificación por correo.</div>
+          <div>• Seguridad reforzada y trazabilidad de las acciones administrativas.</div>
+        </div>`;
+
+      const loginMsg = document.getElementById('loginMsg');
+      if (loginMsg) loginView.insertBefore(panel, loginMsg);
+      else loginView.appendChild(panel);
+    } catch (error) {
+      console.warn('No se pudo mostrar la actualización pública de SIRRO.', error);
+    }
+  }
+
+  renderPublicUpdate();
 
   function loadModule(src, marker) {
     if (window[marker] || document.querySelector(`script[src="${src}"]`)) return;
