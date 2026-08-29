@@ -58,7 +58,7 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-15', constants: Object.freeze({ ROLES, TZ, PUERPERIO, SPECIALTIES }), utils, api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-16', constants: Object.freeze({ ROLES, TZ, PUERPERIO, SPECIALTIES }), utils, api, errors, authz });
 
   function loadStyle(href, marker) {
     if (document.querySelector(`link[data-sirro-style="${marker}"]`)) return;
@@ -127,4 +127,5 @@
   loadModule('./response-detail-ui.js', 'SIRRO_RESPONSE_DETAIL_UI');
   loadModule('./maternal-monitor.js', '__sirroMaternalMonitorLoaded');
   loadModule('./maternal-monitor-style.js', 'SIRRO_MATERNAL_MONITOR_STYLE');
+  loadModule('./regression-guard.js', 'SIRRO_REGRESSION_GUARD');
 })();
