@@ -4,6 +4,16 @@
   const SITE_KEY = '0x4AAAAAAEZUsW_95JDOEt40';
   const tokens = { login: '', recovery: '' };
   const widgets = { login: null, recovery: null };
+  const retryCount = { login: 0, recovery: 0 };
+  const MAX_RETRIES = 4;
+
+  function clearTurnstileLoader() {
+    try {
+      const existing = document.querySelector('script[data-sirro-turnstile]');
+      if (existing) existing.remove();
+    } catch {}
+    window.__sirroTurnstilePromise = null;
+  }
 
   function ensureTurnstileScript() {
     if (window.turnstile) return Promise.resolve(window.turnstile);
@@ -12,7 +22,7 @@
       const existing = document.querySelector('script[data-sirro-turnstile]');
       if (existing) {
         existing.addEventListener('load', () => resolve(window.turnstile), { once: true });
-        existing.addEventListener('error', () => reject(new Error('No se pudo cargar la verificación de seguridad.')), { once: true });
+        existing.addEventListener('error', () => { clearTurnstileLoader(); reject(new Error('No se pudo cargar la verificación de seguridad.')); }, { once: true });
         return;
       }
       const script = document.createElement('script');
@@ -21,7 +31,7 @@
       script.defer = true;
       script.dataset.sirroTurnstile = 'true';
       script.onload = () => resolve(window.turnstile);
-      script.onerror = () => reject(new Error('No se pudo cargar la verificación de seguridad.'));
+      script.onerror = () => { clearTurnstileLoader(); reject(new Error('No se pudo cargar la verificación de seguridad.')); };
       document.head.appendChild(script);
     });
     return window.__sirroTurnstilePromise;
@@ -32,6 +42,30 @@
     try {
       if (window.turnstile && widgets[kind] !== null) window.turnstile.reset(widgets[kind]);
     } catch {}
+  }
+
+  function removeWidget(kind) {
+    tokens[kind] = '';
+    try {
+      if (window.turnstile && widgets[kind] !== null) window.turnstile.remove(widgets[kind]);
+    } catch {}
+    widgets[kind] = null;
+    const id = kind === 'login' ? 'sirroTurnstileLogin' : 'sirroTurnstileRecovery';
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = '';
+  }
+
+  function scheduleRetry(kind) {
+    if (retryCount[kind] >= MAX_RETRIES) {
+      const target = kind === 'login' ? '#loginMsg' : '#recoveryMsg';
+      if (typeof showMsg === 'function') showMsg(target, 'La verificación de seguridad no pudo conectarse. Se reintentará al recargar la página.', 'error');
+      return;
+    }
+    retryCount[kind] += 1;
+    setTimeout(() => {
+      removeWidget(kind);
+      mount(kind);
+    }, 1500 * retryCount[kind]);
   }
 
   async function mount(kind) {
@@ -52,14 +86,24 @@
       if (!turnstile || widgets[kind] !== null) return;
       widgets[kind] = turnstile.render(box, {
         sitekey: SITE_KEY,
-        callback: token => { tokens[kind] = token || ''; },
+        callback: token => {
+          tokens[kind] = token || '';
+          retryCount[kind] = 0;
+          const target = kind === 'login' ? '#loginMsg' : '#recoveryMsg';
+          if (typeof showMsg === 'function' && token) showMsg(target, '');
+        },
         'expired-callback': () => { tokens[kind] = ''; },
-        'error-callback': () => { tokens[kind] = ''; },
+        'timeout-callback': () => { tokens[kind] = ''; scheduleRetry(kind); },
+        'error-callback': () => { tokens[kind] = ''; scheduleRetry(kind); },
+        retry: 'auto',
+        'retry-interval': 2000,
+        'refresh-expired': 'auto',
+        'refresh-timeout': 'auto',
         theme: 'auto'
       });
     } catch (error) {
-      const target = kind === 'login' ? '#loginMsg' : '#recoveryMsg';
-      if (typeof showMsg === 'function') showMsg(target, error.message, 'error');
+      clearTurnstileLoader();
+      scheduleRetry(kind);
     }
   }
 
@@ -69,7 +113,10 @@
     const u = document.getElementById('loginUser')?.value.trim() || '';
     const p = document.getElementById('loginPass')?.value || '';
     if (!u || !p) return showMsg('#loginMsg', 'Escriba usuario y contraseña.', 'error');
-    if (!tokens.login) return showMsg('#loginMsg', 'Complete la verificación de seguridad.', 'error');
+    if (!tokens.login) {
+      mount('login');
+      return showMsg('#loginMsg', 'Espere un momento mientras se completa la verificación de seguridad.', 'error');
+    }
     let email;
     try { email = await authEmail(u); }
     catch { return showMsg('#loginMsg', 'No se pudo validar el usuario. Intente nuevamente.', 'error'); }
@@ -83,7 +130,10 @@
   async function secureSendRecovery() {
     const user = document.getElementById('recoveryUser')?.value.trim() || '';
     if (!user) return showMsg('#recoveryMsg', 'Escriba su usuario o correo.', 'error');
-    if (!tokens.recovery) return showMsg('#recoveryMsg', 'Complete la verificación de seguridad.', 'error');
+    if (!tokens.recovery) {
+      mount('recovery');
+      return showMsg('#recoveryMsg', 'Espere un momento mientras se completa la verificación de seguridad.', 'error');
+    }
     showMsg('#recoveryMsg', 'Procesando solicitud…');
     const captchaToken = tokens.recovery;
     try {
@@ -110,7 +160,7 @@
   window.sendRecovery = secureSendRecovery;
   window.showForgotPassword = secureShowForgotPassword;
   window.showLogin = secureShowLogin;
-  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-1', reset, mount });
+  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-2', reset, mount });
 
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) loginBtn.onclick = secureLogin;
