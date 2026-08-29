@@ -96,12 +96,20 @@
       }),AUTH_TIMEOUT,'SIGNIN_TIMEOUT');
       const data=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(data?.error_code==='captcha_failed'?'CAPTCHA_FAILED':data?.error_description||data?.msg||'INVALID_LOGIN');
-      if(!data?.access_token||!data?.user) throw new Error('SESSION_MISSING');
+      if(!data?.access_token||!data?.refresh_token||!data?.user) throw new Error('SESSION_MISSING');
+
+      const sessionResult=await withTimeout(
+        sb.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}),
+        AUTH_TIMEOUT,
+        'SESSION_SYNC_TIMEOUT'
+      );
+      if(sessionResult?.error) throw new Error('SESSION_SYNC_FAILED');
+
       const p=await getProfile(data.user.id,data.access_token);
       if(!p) throw new Error('PROFILE_NOT_FOUND');
       if(p.estado!=='ACTIVO') throw new Error(`PROFILE_${p.estado||'INACTIVO'}`);
+
       enterImmediately(data.user,p);
-      try{sb.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}).catch(()=>{});}catch{}
       msg('');
     }catch(e){
       console.error('SIRRO login estable:',e);
@@ -110,6 +118,7 @@
       else if(code==='PROFILE_NOT_FOUND') msg('El usuario no tiene perfil SIRRO.','error');
       else if(code.startsWith('PROFILE_')) msg('Usuario no activo.','error');
       else if(code.includes('TIMEOUT')) msg('La conexión tardó demasiado. Intente nuevamente.','error');
+      else if(code.startsWith('SESSION_SYNC')) msg('No se pudo establecer la sesión de SIRRO. Intente nuevamente.','error');
       else msg('Usuario o contraseña incorrectos.','error');
       try{window.SIRRO_AUTH_SECURITY?.reset?.('login');window.SIRRO_AUTH_SECURITY?.mount?.('login');}catch{}
     }finally{
