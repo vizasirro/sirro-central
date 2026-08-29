@@ -2,6 +2,13 @@
   if (window.SIRRO_REGRESSION_GUARD) return;
   window.SIRRO_REGRESSION_GUARD = true;
 
+  if(!document.querySelector('script[src="./login-stable.js"]')){
+    const ls=document.createElement('script');
+    ls.src='./login-stable.js';
+    ls.async=false;
+    document.head.appendChild(ls);
+  }
+
   const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
   const currentProfile = () => typeof profile !== 'undefined' ? profile : null;
   const isAdminRole = () => ['ADMIN_REGIONAL','ADMINISTRADOR'].includes(currentProfile()?.rol);
@@ -13,13 +20,11 @@
   function enforceRoleUI(){
     const p=currentProfile();
     if(!p) return;
-
     if(!isAdminRole()){
       document.querySelector('button[data-tab="usuarios"]')?.classList.add('hidden');
       document.getElementById('tab-usuarios')?.classList.add('hidden');
       document.getElementById('userForm')?.classList.add('hidden');
       document.querySelector('.user-form-extra')?.classList.add('hidden');
-
       document.querySelectorAll('button,a').forEach(el=>{
         const t=norm(el.textContent);
         if(['EDITAR USUARIO','ACTIVAR','AUSENCIA','SUSPENDER','INACTIVAR','BORRAR USUARIO','RESTABLECER ACCESO'].includes(t)){
@@ -27,7 +32,6 @@
           if(userRow || el.closest('#tab-usuarios')) el.remove();
         }
       });
-
       document.querySelectorAll('h1,h2,h3,strong').forEach(h=>{
         const t=norm(h.textContent);
         if(t.includes('AUXILIARES DE ENFERMERIA') && t.includes('RESPONSABLE DE US')){
@@ -41,7 +45,6 @@
   function requiresAttentionCount(){
     const p=currentProfile();
     if(!p || !isClinicalRole() || !p.establecimiento_id) return 0;
-
     if(isAppointmentRole()){
       return allNotifications().filter(n=>{
         if(n.leida) return false;
@@ -49,7 +52,6 @@
         return text.includes('CITA') || text.includes('CONSULTA EXTERNA');
       }).length;
     }
-
     const est=String(p.establecimiento_id);
     const statesDest=new Set(['ENVIADO','EN_ATENCION','EVALUADO','HOSPITALIZADO']);
     const statesOrigin=new Set(['RESPUESTA_ENVIADA','RECHAZADO']);
@@ -103,7 +105,6 @@
   if(prevConfigure){
     configureTabs=function(){ const r=prevConfigure.apply(this,arguments); setTimeout(apply,0); return r; };
   }
-
   const prevRefresh=typeof refreshAll==='function'?refreshAll:null;
   if(prevRefresh){
     refreshAll=async function(){ const r=await prevRefresh.apply(this,arguments); apply(); return r; };
