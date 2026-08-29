@@ -7,6 +7,7 @@
   const visible = el => el && !el.classList.contains('hidden');
   const loginView = () => document.getElementById('loginView');
   const appView = () => document.getElementById('appView');
+  const loginBusy = () => !!document.getElementById('loginBtn')?.disabled;
 
   function normalizeCoreRoles(){
     try {
@@ -25,11 +26,16 @@
   }
 
   async function recoverSession(){
-    if (recoveryRunning || typeof sb === 'undefined' || typeof enter !== 'function') return;
+    if (recoveryRunning || loginBusy() || typeof sb === 'undefined' || typeof enter !== 'function') return;
     if (visible(appView())) return;
     recoveryRunning = true;
     try {
-      const {data,error} = await sb.auth.getSession();
+      let timer;
+      const sessionPromise = sb.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('SESSION_TIMEOUT')), 8000);
+      });
+      const {data,error} = await Promise.race([sessionPromise, timeoutPromise]).finally(() => clearTimeout(timer));
       if (error) throw error;
       const user = data?.session?.user;
       if (!user) return;
@@ -39,7 +45,7 @@
       recoveredUserId = user.id;
     } catch (e) {
       console.error('SIRRO startup recovery:', e);
-      showStartupError('La sesión fue validada, pero SIRRO no pudo terminar de cargar. Recargue la página una vez.');
+      if (e?.message !== 'SESSION_TIMEOUT') showStartupError('La sesión guardada no pudo recuperarse. Ingrese normalmente.');
     } finally {
       recoveryRunning = false;
     }
@@ -47,9 +53,7 @@
 
   function ensureSecurity(){
     try {
-      if (window.SIRRO_AUTH_SECURITY?.mount) {
-        window.SIRRO_AUTH_SECURITY.mount('login');
-      }
+      if (window.SIRRO_AUTH_SECURITY?.mount) window.SIRRO_AUTH_SECURITY.mount('login');
     } catch {}
   }
 
@@ -62,29 +66,23 @@
   setTimeout(normalizeCoreRoles, 100);
   setTimeout(normalizeCoreRoles, 700);
 
-  // Reintentos limitados: recuperan una sesión válida si otro módulo terminó de cargar después.
-  setTimeout(recoverSession, 500);
-  setTimeout(recoverSession, 1800);
-  setTimeout(recoverSession, 4500);
-
-  // Turnstile nunca se omite; solo se reintenta su montaje si la red tardó en cargarlo.
+  // El login explícito tiene prioridad. No competir con él mediante recuperaciones automáticas repetidas.
   setTimeout(ensureSecurity, 700);
   setTimeout(ensureSecurity, 2500);
 
   window.addEventListener('load', () => {
     updateServiceWorker();
-    setTimeout(recoverSession, 250);
     setTimeout(ensureSecurity, 400);
   }, {once:true});
 
   window.addEventListener('unhandledrejection', event => {
     console.error('SIRRO unhandled rejection:', event.reason);
-    if (!visible(appView())) showStartupError('SIRRO encontró un problema al iniciar. Recargue la página e intente nuevamente.');
+    if (!visible(appView()) && !loginBusy()) showStartupError('SIRRO encontró un problema al iniciar. Intente ingresar nuevamente.');
   });
 
   window.addEventListener('error', event => {
     console.error('SIRRO runtime error:', event.error || event.message);
   });
 
-  window.SIRRO_STARTUP_READY = Object.freeze({ version:'startup-ready-1', recoverSession, normalizeCoreRoles });
+  window.SIRRO_STARTUP_READY = Object.freeze({ version:'startup-ready-2', recoverSession, normalizeCoreRoles });
 })();
