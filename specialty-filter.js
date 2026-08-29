@@ -18,11 +18,20 @@
   function belongsToCurrentSpecialist(t){const key=specialistKey();if(!key)return true;if(!appointmentReady(t))return false;const target=tramoSpecialty(t);return !target||target===key;}
   function visibleCaseIds(){const key=specialistKey();if(!key||typeof tramos==='undefined')return null;return new Set(tramos.filter(belongsToCurrentSpecialist).map(t=>String(t.caso_id)));}
   function withSpecialistData(render){const key=specialistKey();if(!key||typeof tramos==='undefined'||typeof cases==='undefined')return render();const allTramos=tramos,allCases=cases,ids=visibleCaseIds();tramos=allTramos.filter(belongsToCurrentSpecialist);cases=allCases.filter(c=>ids.has(String(c.id)));try{return render();}finally{tramos=allTramos;cases=allCases;}}
-  function repaintSpecialistViews(){const key=specialistKey();if(!key)return;withSpecialistData(()=>{if(typeof renderStats==='function')renderStats();if(typeof renderReceived==='function')renderReceived();});window.dispatchEvent(new Event('sirro-specialty-filtered'));}
+  function renderSpecialistReceived(){
+    const key=specialistKey();
+    if(!key||typeof tramos==='undefined'||!Array.isArray(tramos)||typeof profile==='undefined')return;
+    const box=document.getElementById('receivedList');
+    if(!box||typeof tramoItem!=='function')return;
+    const rows=tramos.filter(t=>String(t.establecimiento_destino_id||'')===String(profile.establecimiento_id||'')&&['ENVIADO','RECIBIDO','EN_ATENCION','EVALUADO','HOSPITALIZADO'].includes(String(t.estado_actual||''))&&belongsToCurrentSpecialist(t));
+    box.innerHTML=rows.map(t=>tramoItem(t,true)).join('')||'<p class="muted">No hay referencias pendientes.</p>';
+  }
+  function repaintSpecialistViews(){const key=specialistKey();if(!key)return;withSpecialistData(()=>{if(typeof renderStats==='function')renderStats();});renderSpecialistReceived();window.dispatchEvent(new Event('sirro-specialty-filtered'));}
   const originalReceived=typeof window.renderReceived==='function'?window.renderReceived:(typeof renderReceived==='function'?renderReceived:null);
-  if(originalReceived&&!originalReceived.__sirroSpecialtyFilter){const wrappedReceived=function(){return withSpecialistData(()=>originalReceived.apply(this,arguments));};wrappedReceived.__sirroSpecialtyFilter=true;window.renderReceived=wrappedReceived;try{renderReceived=wrappedReceived;}catch{}}
+  if(originalReceived&&!originalReceived.__sirroSpecialtyFilter){const wrappedReceived=function(){const r=originalReceived.apply(this,arguments);renderSpecialistReceived();return r;};wrappedReceived.__sirroSpecialtyFilter=true;window.renderReceived=wrappedReceived;try{renderReceived=wrappedReceived;}catch{}}
+  document.addEventListener('click',e=>{const b=e.target.closest?.('#tabs button[data-tab="recibidas"],button[onclick*="recibidas"]');if(!b)return;setTimeout(renderSpecialistReceived,0);setTimeout(renderSpecialistReceived,150);});
   const originalRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;if(originalRefresh&&!originalRefresh.__sirroSpecialtyFilter){const wrapped=async function(){const result=await originalRefresh.apply(this,arguments);await loadProgrammedAppointments();repaintSpecialistViews();return result;};wrapped.__sirroSpecialtyFilter=true;window.refreshAll=wrapped;}
-  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments});
+  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments,renderSpecialistReceived});
   const start=async()=>{await loadProgrammedAppointments();repaintSpecialistViews();};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
