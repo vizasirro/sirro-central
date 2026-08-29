@@ -6,6 +6,7 @@
   const widgets = { login: null, recovery: null };
   const retryCount = { login: 0, recovery: 0 };
   const MAX_RETRIES = 4;
+  const AUTH_TIMEOUT_MS = 20000;
 
   function clearTurnstileLoader() {
     try {
@@ -35,6 +36,23 @@
       document.head.appendChild(script);
     });
     return window.__sirroTurnstilePromise;
+  }
+
+  function withTimeout(promise, ms = AUTH_TIMEOUT_MS) {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('AUTH_TIMEOUT')), ms);
+      })
+    ]).finally(() => clearTimeout(timer));
+  }
+
+  function setLoginBusy(busy) {
+    const btn = document.getElementById('loginBtn');
+    if (!btn) return;
+    btn.disabled = !!busy;
+    btn.textContent = busy ? 'Ingresando…' : 'Ingresar';
   }
 
   function reset(kind) {
@@ -124,9 +142,34 @@
     }
   }
 
+  function hardenSupabaseAuth() {
+    if (!window.sb?.auth || window.sb.auth.__sirroCaptchaWrapped) return;
+    const originalSignIn = window.sb.auth.signInWithPassword.bind(window.sb.auth);
+    const originalRecovery = window.sb.auth.resetPasswordForEmail.bind(window.sb.auth);
+
+    window.sb.auth.signInWithPassword = (credentials = {}) => {
+      const provided = credentials?.options?.captchaToken || '';
+      const captchaToken = provided || tokens.login;
+      if (!captchaToken) {
+        return Promise.resolve({ data: { user: null, session: null }, error: new Error('CAPTCHA_REQUIRED') });
+      }
+      return originalSignIn({
+        ...credentials,
+        options: { ...(credentials.options || {}), captchaToken }
+      });
+    };
+
+    window.sb.auth.resetPasswordForEmail = (email, options = {}) => {
+      const captchaToken = options?.captchaToken || tokens.recovery;
+      if (!captchaToken) return Promise.reject(new Error('CAPTCHA_REQUIRED'));
+      return originalRecovery(email, { ...options, captchaToken });
+    };
+
+    try { Object.defineProperty(window.sb.auth, '__sirroCaptchaWrapped', { value: true }); } catch {}
+  }
+
   async function secureLogin() {
     if (typeof showMsg !== 'function') return;
-    showMsg('#loginMsg', 'Ingresando…');
     const u = document.getElementById('loginUser')?.value.trim() || '';
     const p = document.getElementById('loginPass')?.value || '';
     if (!u || !p) return showMsg('#loginMsg', 'Escriba usuario y contraseña.', 'error');
@@ -134,14 +177,40 @@
       mount('login');
       return showMsg('#loginMsg', 'Espere un momento mientras se completa la verificación de seguridad.', 'error');
     }
-    let email;
-    try { email = await authEmail(u); }
-    catch { return showMsg('#loginMsg', 'No se pudo validar el usuario. Intente nuevamente.', 'error'); }
-    const captchaToken = tokens.login;
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: p, options: { captchaToken } });
-    reset('login');
-    if (error) return showMsg('#loginMsg', 'Usuario o contraseña incorrectos.', 'error');
-    await enter(data.user);
+
+    setLoginBusy(true);
+    showMsg('#loginMsg', 'Ingresando…');
+    try {
+      let email;
+      try { email = await withTimeout(authEmail(u)); }
+      catch { return showMsg('#loginMsg', 'No se pudo validar el usuario. Intente nuevamente.', 'error'); }
+
+      hardenSupabaseAuth();
+      const captchaToken = tokens.login;
+      const { data, error } = await withTimeout(
+        sb.auth.signInWithPassword({ email, password: p, options: { captchaToken } })
+      );
+      reset('login');
+      if (error) {
+        if (String(error.message || '').includes('CAPTCHA')) {
+          mount('login');
+          return showMsg('#loginMsg', 'La verificación de seguridad debe completarse nuevamente.', 'error');
+        }
+        return showMsg('#loginMsg', 'Usuario o contraseña incorrectos.', 'error');
+      }
+      await withTimeout(enter(data.user), 30000);
+    } catch (error) {
+      reset('login');
+      mount('login');
+      const msg = String(error?.message || '');
+      if (msg.includes('AUTH_TIMEOUT')) {
+        showMsg('#loginMsg', 'La conexión tardó demasiado. Intente ingresar nuevamente.', 'error');
+      } else {
+        showMsg('#loginMsg', 'No fue posible completar el ingreso. Intente nuevamente.', 'error');
+      }
+    } finally {
+      setLoginBusy(false);
+    }
   }
 
   async function secureSendRecovery() {
@@ -154,8 +223,9 @@
     showMsg('#recoveryMsg', 'Procesando solicitud…');
     const captchaToken = tokens.recovery;
     try {
-      const email = await authEmail(user);
-      await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken });
+      hardenSupabaseAuth();
+      const email = await withTimeout(authEmail(user));
+      await withTimeout(sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken }));
     } catch {}
     reset('recovery');
     showMsg('#recoveryMsg', 'Si la cuenta existe y tiene correo habilitado, recibirá un enlace de recuperación. Revise también correo no deseado.', 'ok');
@@ -173,11 +243,12 @@
     mount('login');
   }
 
+  hardenSupabaseAuth();
   window.login = secureLogin;
   window.sendRecovery = secureSendRecovery;
   window.showForgotPassword = secureShowForgotPassword;
   window.showLogin = secureShowLogin;
-  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-3', reset, mount });
+  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-4', reset, mount, login: secureLogin });
 
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) loginBtn.onclick = secureLogin;
