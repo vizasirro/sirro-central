@@ -32,6 +32,20 @@
     return match ? match[1] : u;
   }
 
+  function captchaBoxId(kind) {
+    return kind === 'login' ? 'sirroTurnstileLogin' : 'sirroTurnstileRecovery';
+  }
+
+  function readCaptchaToken(kind) {
+    if (tokens[kind]) return tokens[kind];
+    const box = document.getElementById(captchaBoxId(kind));
+    const field = box?.querySelector('input[name="cf-turnstile-response"],textarea[name="cf-turnstile-response"]') ||
+      document.querySelector('input[name="cf-turnstile-response"],textarea[name="cf-turnstile-response"]');
+    const value = String(field?.value || '').trim();
+    if (value) tokens[kind] = value;
+    return value;
+  }
+
   function clearTurnstileLoader() {
     try { document.querySelector('script[data-sirro-turnstile]')?.remove(); } catch {}
     window.__sirroTurnstilePromise = null;
@@ -62,8 +76,7 @@
     tokens[kind] = '';
     try { if (window.turnstile && widgets[kind] !== null) window.turnstile.remove(widgets[kind]); } catch {}
     widgets[kind] = null;
-    const id = kind === 'login' ? 'sirroTurnstileLogin' : 'sirroTurnstileRecovery';
-    const box = document.getElementById(id);
+    const box = document.getElementById(captchaBoxId(kind));
     if (box) box.innerHTML = '';
   }
 
@@ -79,7 +92,7 @@
   async function mount(kind) {
     const view = kind === 'login' ? document.getElementById('loginView') : document.getElementById('forgotPasswordView');
     if (!view) return;
-    const id = kind === 'login' ? 'sirroTurnstileLogin' : 'sirroTurnstileRecovery';
+    const id = captchaBoxId(kind);
     let box = document.getElementById(id);
     if (!box) {
       box = document.createElement('div');
@@ -192,9 +205,12 @@
     const u = normalizeLoginIdentifier(rawUser);
     const p = document.getElementById('loginPass')?.value || '';
     if (!u || !p) return showMsg('#loginMsg', 'Escriba usuario y contraseña.', 'error');
-    if (!tokens.login) {
-      mount('login');
-      return showMsg('#loginMsg', 'Complete la verificación de seguridad antes de ingresar.', 'error');
+
+    const captchaToken = readCaptchaToken('login');
+    if (!captchaToken) {
+      removeWidget('login');
+      await mount('login');
+      return showMsg('#loginMsg', 'Complete nuevamente la verificación de seguridad y pulse Ingresar.', 'error');
     }
 
     setLoginBusy(true);
@@ -204,7 +220,6 @@
       try { email = await withTimeout(authEmail(u), AUTH_TIMEOUT_MS, 'EMAIL_TIMEOUT'); }
       catch { return showMsg('#loginMsg', 'No se pudo validar el usuario. Intente nuevamente.', 'error'); }
 
-      const captchaToken = tokens.login;
       const result = await withTimeout(
         sb.auth.signInWithPassword({ email, password: p, options: { captchaToken } }),
         AUTH_TIMEOUT_MS,
@@ -214,7 +229,8 @@
       reset('login');
       if (error) {
         if (String(error.message || '').toLowerCase().includes('captcha')) {
-          mount('login');
+          removeWidget('login');
+          await mount('login');
           return showMsg('#loginMsg', 'La verificación de seguridad debe completarse nuevamente.', 'error');
         }
         return showMsg('#loginMsg', 'Usuario o contraseña incorrectos.', 'error');
@@ -235,8 +251,10 @@
     const rawUser = document.getElementById('recoveryUser')?.value.trim() || '';
     const user = normalizeLoginIdentifier(rawUser);
     if (!user) return showMsg('#recoveryMsg', 'Escriba su usuario o correo.', 'error');
-    if (!tokens.recovery) {
-      mount('recovery');
+    const captchaToken = readCaptchaToken('recovery');
+    if (!captchaToken) {
+      removeWidget('recovery');
+      await mount('recovery');
       return showMsg('#recoveryMsg', 'Complete la verificación de seguridad antes de continuar.', 'error');
     }
     showMsg('#recoveryMsg', 'Procesando solicitud…');
@@ -244,7 +262,7 @@
       const email = await withTimeout(authEmail(user), AUTH_TIMEOUT_MS, 'EMAIL_TIMEOUT');
       await withTimeout(sb.auth.resetPasswordForEmail(email, {
         redirectTo: location.origin + location.pathname,
-        captchaToken: tokens.recovery
+        captchaToken
       }), AUTH_TIMEOUT_MS, 'RECOVERY_TIMEOUT');
     } catch {}
     reset('recovery');
@@ -260,9 +278,16 @@
   window.sendRecovery = secureSendRecovery;
   window.showForgotPassword = secureShowForgotPassword;
   window.showLogin = secureShowLogin;
-  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-6', reset, mount, login: secureLogin });
+  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-7', reset, mount, login: secureLogin });
 
-  document.getElementById('loginBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureLogin(); }, true);
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) {
+    loginBtn.onclick = secureLogin;
+    loginBtn.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureLogin(); }, true);
+  }
+  document.getElementById('loginPass')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); secureLogin(); }
+  }, true);
   document.getElementById('forgotPasswordBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureShowForgotPassword(); }, true);
   document.getElementById('sendRecoveryBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureSendRecovery(); }, true);
   document.getElementById('backToLoginBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureShowLogin(); }, true);
