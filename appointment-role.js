@@ -17,6 +17,27 @@
     return c?.servicio_requerido || 'Consulta Externa';
   }
 
+  function citasRows(){
+    if(!isCitas() || typeof tramos==='undefined' || !Array.isArray(tramos)) return [];
+    return tramos.filter(t=>{
+      if(String(t?.establecimiento_destino_id||'')!==String(profile?.establecimiento_id||'')) return false;
+      if(['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO','ANULADO','RECHAZADO'].includes(String(t?.estado_actual||''))) return false;
+      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
+      if(!c || !isCeCase(c)) return false;
+      // Las urgentes van directamente al especialista; Gestión de Citas maneja CE no urgentes.
+      return norm(c?.tipo)!=='URGENTE';
+    });
+  }
+
+  function renderCitasReceived(){
+    if(!isCitas()) return;
+    const box=document.getElementById('receivedList');
+    if(!box) return;
+    const rows=citasRows();
+    box.innerHTML=rows.map(t=>typeof tramoItem==='function'?tramoItem(t,true):'').join('')||'<p class="muted">No hay referencias de Consulta Externa pendientes de gestión.</p>';
+    queueMicrotask(applyCitasUi);
+  }
+
   function installTramoAppointmentButton(){
     const fn=window.tramoItem;
     if(typeof fn!=='function'||fn.__sirroCitasButton)return;
@@ -24,7 +45,7 @@
       let html=fn.apply(this,arguments);
       if(!isCitas()||!withActions) return html;
       const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
-      const eligible=!!c&&isCeCase(c)&&profile?.establecimiento_id===t?.establecimiento_destino_id&&['ENVIADO','RECIBIDO','EN_ATENCION'].includes(String(t?.estado_actual||''));
+      const eligible=!!c&&isCeCase(c)&&norm(c?.tipo)!=='URGENTE'&&profile?.establecimiento_id===t?.establecimiento_destino_id&&!['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO','ANULADO','RECHAZADO'].includes(String(t?.estado_actual||''));
       if(!eligible) return html;
       if(html.includes(`assignCeAppointment('${t.id}')`)) return html;
       const scheduled=hasScheduledCe(t.id,html);
@@ -34,26 +55,12 @@
     };
     wrapped.__sirroCitasButton=true;
     window.tramoItem=wrapped;
-  }
-
-  function hasVisibleCeCase(){
-    if(!isCitas() || typeof tramos==='undefined' || !Array.isArray(tramos)) return false;
-    return tramos.some(t=>{
-      if(String(t?.establecimiento_destino_id||'')!==String(profile?.establecimiento_id||'')) return false;
-      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
-      return !!c && isCeCase(c) && !['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO'].includes(String(t?.estado_actual||''));
-    });
+    try{tramoItem=wrapped;}catch{}
   }
 
   function hasPendingCeAction(){
-    if(!isCitas() || typeof tramos==='undefined' || !Array.isArray(tramos)) return false;
-    return tramos.some(t=>{
-      if(String(t?.establecimiento_destino_id||'')!==String(profile?.establecimiento_id||'')) return false;
-      if(['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO'].includes(String(t?.estado_actual||''))) return false;
-      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
-      if(!c || !isCeCase(c)) return false;
-      return ceRowsFor(t.id).some(s=>s.estado==='PENDIENTE_ASIGNACION');
-    });
+    if(!isCitas()) return false;
+    return citasRows().some(t=>ceRowsFor(t.id).some(s=>s.estado==='PENDIENTE_ASIGNACION'));
   }
 
   function sanitizePendingUi(){
@@ -66,20 +73,10 @@
         if(forbidden.some(x=>text.includes(x))) row.remove();
       });
       const actionable=[...details.children].filter(x=>x.querySelector('button') && !norm(x.textContent).startsWith('REQUIERE MI ATENCION') && !norm(x.textContent).startsWith('LO PENDIENTE'));
-      if(!actionable.length && details.textContent.trim()){
-        const headers=[...details.children].filter(x=>!x.querySelector('button'));
-        if(headers.length<=1) details.innerHTML='<div class="notice ok">No hay acciones pendientes para Gestión de Citas.</div>';
-      }
+      if(!actionable.length && details.textContent.trim()) details.innerHTML='<div class="notice ok">No hay acciones pendientes para Gestión de Citas.</div>';
     }
-
-    // Los contadores de Gestión de Citas deben derivarse de una acción real de cita pendiente,
-    // no de notificaciones informativas ni de pendientes clínicos de otros perfiles.
     if(!hasPendingCeAction()){
       const preview=document.getElementById('sirroPendingPreview');
-      preview?.querySelectorAll('button').forEach(b=>{
-        const text=norm(b.textContent);
-        if(text.includes('REQUIERE MI ATENCION') || text.includes('PENDIENTE')) b.remove();
-      });
       const count=document.getElementById('sirroPendingCount');
       if(count) count.textContent='0';
       document.getElementById('sirroRequiresAttentionBanner')?.remove();
@@ -92,6 +89,13 @@
     if(!isCitas()) return;
     const nueva=document.querySelector('#tabs button[data-tab="nueva"]');
     if(nueva) nueva.classList.add('hidden');
+    const nuevaPane=document.getElementById('tab-nueva');
+    if(nuevaPane && !nuevaPane.classList.contains('hidden')){
+      nuevaPane.classList.add('hidden');
+      document.getElementById('tab-inicio')?.classList.remove('hidden');
+      document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+      document.querySelector('#tabs button[data-tab="inicio"]')?.classList.add('active');
+    }
     const transfers=document.getElementById('sirroTransfersCard');
     if(transfers) transfers.classList.add('hidden');
     document.querySelectorAll('button[onclick]').forEach(b=>{
@@ -111,6 +115,7 @@
     const wrapped=function(){ if(isCitas()) return alert(message); return fn.apply(this,arguments); };
     wrapped.__sirroCitasBlocked=true;
     window[name]=wrapped;
+    try{globalThis[name]=wrapped;}catch{}
   }
 
   function installGuards(){
@@ -127,7 +132,7 @@
     const wrapped=async function(id){
       const t=(typeof tramos!=='undefined'?tramos:[]).find(x=>String(x.id)===String(id));
       const c=t&&typeof caseOf==='function'?caseOf(t.caso_id):null;
-      if(!t||!c||!isCeCase(c)) return alert('No se encontró una referencia de Consulta Externa válida.');
+      if(!t||!c||!isCeCase(c)||norm(c?.tipo)==='URGENTE') return alert('No se encontró una referencia de Consulta Externa válida para Gestión de Citas.');
       const label=specialtyLabel(c), reprogram=hasScheduledCe(id,document.body?.innerText||'');
       document.getElementById('sirroDateTimeModal')?.remove();
       const box=document.createElement('div');
@@ -143,9 +148,10 @@
   function patchRender(name){
     const fn=window[name];
     if(typeof fn!=='function'||fn.__sirroCitasPatched)return;
-    const wrapped=function(){const r=fn.apply(this,arguments);queueMicrotask(()=>{applyCitasUi();});return r;};
+    const wrapped=function(){const r=fn.apply(this,arguments);queueMicrotask(()=>{if(name==='renderReceived')renderCitasReceived();applyCitasUi();});return r;};
     wrapped.__sirroCitasPatched=true;
     window[name]=wrapped;
+    try{globalThis[name]=wrapped;}catch{}
   }
 
   function loadCeNotificationUi(){
@@ -154,9 +160,9 @@
   }
 
   function install(){
-    loadCeNotificationUi();installGuards();installTramoAppointmentButton();patchRender('renderReceived');patchRender('renderTracking');patchRender('renderStats');installAppointmentModal();applyCitasUi();
+    loadCeNotificationUi();installGuards();installTramoAppointmentButton();patchRender('renderReceived');patchRender('renderTracking');patchRender('renderStats');installAppointmentModal();applyCitasUi();renderCitasReceived();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true}); else install();
   window.addEventListener('pageshow',install);window.addEventListener('sirro-specialty-filtered',install);setInterval(install,1200);
-  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi,sanitizePendingUi});
+  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi,sanitizePendingUi,renderCitasReceived,citasRows});
 })();
