@@ -45,6 +45,17 @@
     });
   }
 
+  function hasPendingCeAction(){
+    if(!isCitas() || typeof tramos==='undefined' || !Array.isArray(tramos)) return false;
+    return tramos.some(t=>{
+      if(String(t?.establecimiento_destino_id||'')!==String(profile?.establecimiento_id||'')) return false;
+      if(['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO'].includes(String(t?.estado_actual||''))) return false;
+      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
+      if(!c || !isCeCase(c)) return false;
+      return ceRowsFor(t.id).some(s=>s.estado==='PENDIENTE_ASIGNACION');
+    });
+  }
+
   function sanitizePendingUi(){
     if(!isCitas()) return;
     const forbidden=['RESPUESTA / CONTRARREFERENCIA PENDIENTE','EVALUACION PENDIENTE','REFERENCIA POR RECIBIR','REGISTRAR FECHA Y HORA DEL PARTO','RESPUESTA LISTA PARA CONFIRMAR','REFERENCIA RECHAZADA POR CORREGIR'];
@@ -61,9 +72,9 @@
       }
     }
 
-    // Si no existe ninguna referencia de Consulta Externa visible, cualquier pendiente clínico agregado
-    // por el tablero general no corresponde a este perfil.
-    if(!hasVisibleCeCase()){
+    // Los contadores de Gestión de Citas deben derivarse de una acción real de cita pendiente,
+    // no de notificaciones informativas ni de pendientes clínicos de otros perfiles.
+    if(!hasPendingCeAction()){
       const preview=document.getElementById('sirroPendingPreview');
       preview?.querySelectorAll('button').forEach(b=>{
         const text=norm(b.textContent);
@@ -72,7 +83,8 @@
       const count=document.getElementById('sirroPendingCount');
       if(count) count.textContent='0';
       document.getElementById('sirroRequiresAttentionBanner')?.remove();
-      if(preview && !preview.querySelector('button')) preview.innerHTML='<div class="notice ok"><strong>Sin pendientes.</strong> No tiene acciones de Gestión de Citas pendientes en este momento.</div>';
+      if(preview) preview.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" style="background:#fff1f2;border:2px solid #dc2626;color:#991b1b;padding:12px 16px;border-radius:12px;font:inherit;font-weight:750;cursor:default">0 PENDIENTES</button><button type="button" style="background:#fffbeb;border:2px solid #d97706;color:#92400e;padding:12px 16px;border-radius:12px;font:inherit;font-weight:750;cursor:default">0 REQUIERE MI ATENCIÓN</button></div><div class="notice ok" style="margin-top:10px">No hay acciones pendientes para Gestión de Citas.</div>';
+      if(details) details.innerHTML='';
     }
   }
 
