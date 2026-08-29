@@ -47,10 +47,10 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-10', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-11', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
-  // Información pública visible únicamente en la pantalla de ingreso.
-  // No modifica autenticación, permisos, rutas ni flujos operativos de SIRRO.
+  // Información propia de SIRRO visible únicamente en la pantalla de ingreso.
+  // El ingreso de SIRRO no incorpora accesos a sistemas externos.
   function renderPublicUpdate() {
     try {
       const loginView = document.getElementById('loginView');
@@ -75,30 +75,6 @@
       const loginMsg = document.getElementById('loginMsg');
       if (loginMsg) loginView.insertBefore(panel, loginMsg);
       else loginView.appendChild(panel);
-
-      // Portal Regional: los accesos externos son solo enlaces independientes.
-      // Regla de Plata: Encuestas no comparte datos, usuarios, permisos ni procesos con SIRRO.
-      if (!document.getElementById('sirroRegionalPortal')) {
-        const portal = document.createElement('section');
-        portal.id = 'sirroRegionalPortal';
-        portal.style.cssText = 'margin-top:14px;text-align:left;border:1px solid #d7e4e0;border-radius:12px;background:#fff;padding:12px;';
-        portal.innerHTML = `
-          <div style="font-weight:900;color:#0b6b57;font-size:14px;">Portal Regional de Olancho</div>
-          <div style="margin-top:3px;font-size:12px;line-height:1.4;color:#607a74;">Acceso a herramientas digitales de utilidad para la Región Sanitaria de Olancho.</div>
-          <div style="margin-top:10px;display:grid;gap:8px;">
-            <div style="border:1px solid #e0ebe8;border-radius:9px;padding:9px 10px;background:#f8fbfa;">
-              <div style="font-weight:800;color:#234f46;">SIRRO · Referencia y Respuesta</div>
-              <div style="font-size:12px;color:#6b7f7a;margin-top:2px;">Sistema actualmente disponible en este portal.</div>
-            </div>
-            <a href="https://encuestas-olancho.vercel.app" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;border:1px solid #b9d8cf;border-radius:9px;padding:11px 12px;background:#f4faf8;">
-              <div style="font-weight:900;color:#0b6b57;">ENCUESTAS DE SATISFACCIÓN</div>
-              <div style="font-size:12px;color:#607a74;margin-top:3px;">Evaluación de la experiencia de los usuarios de los servicios de salud.</div>
-              <div style="margin-top:8px;font-size:12px;font-weight:900;color:#0b6b57;">INGRESAR A ENCUESTAS →</div>
-            </a>
-            <div style="font-size:11px;color:#81918d;padding:2px 3px;">Encuestas funciona como sistema independiente; este acceso no comparte sesiones, usuarios, permisos ni información con SIRRO.</div>
-          </div>`;
-        loginView.appendChild(portal);
-      }
     } catch (error) {
       console.warn('No se pudo mostrar la actualización pública de SIRRO.', error);
     }
