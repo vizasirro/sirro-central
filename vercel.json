@@ -1,1 +1,1 @@
-{"rewrites":[{"source":"/","destination":"/portal.html"}]}
+{"redirects":[{"source":"/","destination":"/portal.html","permanent":false}]}
