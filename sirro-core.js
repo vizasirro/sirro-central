@@ -39,18 +39,14 @@
     isHospital(profileValue) { return profileValue?.rol === ROLES.USUARIO_HOSPITAL; }
   });
 
-  // Regla de oro: el Administrador operativo se reconoce desde el núcleo,
-  // sin esperar a que cargue un módulo posterior. Esto evita carreras al iniciar sesión.
   try {
     if (typeof roleLabels !== 'undefined') roleLabels.ADMINISTRADOR = 'Administrador';
     if (typeof isAdmin === 'function') isAdmin = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR'].includes(profile?.rol); };
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-11', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-12', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
-  // Información propia de SIRRO visible únicamente en la pantalla de ingreso.
-  // El ingreso de SIRRO no incorpora accesos a sistemas externos.
   function renderPublicUpdate() {
     try {
       const loginView = document.getElementById('loginView');
@@ -93,7 +89,6 @@
   }
 
   loadModule('./startup-ready.js', 'SIRRO_STARTUP_READY');
-  loadModule('./auth-security.js', 'SIRRO_AUTH_SECURITY');
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
