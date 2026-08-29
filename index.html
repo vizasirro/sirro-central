@@ -3,249 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b6b57">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="SIRRO">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>SIRRO</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
+<meta name="theme-color" content="#0b3558">
+<title>Portal Regional de Olancho</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17312b;background:#f4f7f6}
-*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}
-.topbar{background:#0b6b57;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.brand{display:flex;align-items:center;gap:12px}.brand-logo{width:62px;height:62px;object-fit:contain;border-radius:10px;background:#fff}
-.topbar h1{margin:0;font-size:27px}.topbar p{margin:2px 0 0;opacity:.92}.wrap{max-width:1180px;margin:18px auto;padding:0 14px}
-.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 12px #00000012;margin-bottom:16px}
-.narrow{max-width:430px;margin:42px auto}.login-card{text-align:center}.login-card img{max-width:150px;max-height:150px;object-fit:contain}
-label{display:block;font-weight:650;margin:9px 0}input,select,textarea{width:100%;padding:10px;border:1px solid #b9cbc5;border-radius:9px;margin-top:5px;font:inherit}
-textarea{min-height:86px}button{background:#0b6b57;color:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:750;cursor:pointer}
-button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#0b6b57}.danger{background:#9b2c2c}.userbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.tabs{display:flex;gap:8px;overflow:auto}.tabs button{white-space:nowrap;background:#e9f1ef;color:#24584d}.tabs button.active{background:#0b6b57;color:#fff}
-.grid{display:grid;gap:12px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stats article{margin:0}.stats span{display:block;color:#607a74}.stats strong{font-size:30px}
-.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}.formgrid h2,.formgrid .full,.formgrid button{grid-column:1/-1}
-.readonlybox{background:#f1f7f5;border-radius:10px;padding:12px}.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.item{border:1px solid #d7e4e0;border-radius:10px;padding:12px;margin:10px 0}.item .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.badge{display:inline-block;border-radius:999px;padding:4px 9px;background:#e7f2ef;font-size:12px;font-weight:800}.muted,.hint{color:#6a7f79;font-size:13px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions button{padding:7px 10px;font-size:13px}
-.notice{padding:10px 12px;border-radius:9px;background:#eef7f4;margin:8px 0}.error{background:#fff0f0;color:#8d2020}.ok{background:#edf8f0;color:#256536}
-.monitor{display:grid;gap:10px}.monitor details{border:1px solid #d9e2df;border-radius:10px;padding:10px;background:#fff}.monitor summary{cursor:pointer;font-weight:800}
-.user-form-extra{border-top:1px solid #e3ebe8;margin-top:12px;padding-top:10px}
-.install-btn{display:block;width:100%;margin-top:12px}.install-help{margin:8px 0 0}
-.link-btn{background:transparent;color:#0b6b57;padding:8px;text-decoration:underline}.top-actions{display:flex;gap:8px;align-items:center}.help-btn{background:#fff;color:#0b6b57;border:2px solid #fff;border-radius:8px;min-width:72px}.help-panel{max-width:760px;margin:24px auto}.help-panel ol{padding-left:24px}.help-panel li{margin:8px 0}.help-panel h3{color:#0b6b57}.help-close{float:right}
-.notification-settings{border-top:1px solid #d7e4e0;margin-top:18px;padding-top:16px}.switch-row{display:flex;align-items:center;gap:10px;margin:10px 0}.switch-row input{width:auto;margin:0}.notification-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}.notification-options label{display:flex;align-items:center;gap:9px;font-weight:550}.notification-options input{width:auto;margin:0}.settings-status{margin-top:10px}
-.survey-door{display:block;margin-top:14px;padding:13px 14px;border:2px solid #0b6b57;border-radius:11px;background:#f1f8f6;text-decoration:none;text-align:left}.survey-door strong{display:block;color:#0b6b57;font-size:14px}.survey-door span{display:block;color:#607a74;font-size:12px;line-height:1.4;margin-top:4px}.survey-door b{display:block;color:#0b6b57;font-size:12px;margin-top:8px}
-@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters,.notification-options{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17312b;background:#f4f7f8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#eef4f7 0%,#f8fafb 100%)}
+header{background:#0b3558;color:#fff;padding:22px 18px;box-shadow:0 2px 10px #0002}
+.head{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:15px}.logo{width:72px;height:72px;object-fit:contain;background:#fff;border-radius:12px;padding:4px}
+h1{margin:0;font-size:28px}.sub{margin:4px 0 0;opacity:.92;font-size:15px}
+main{max-width:980px;margin:42px auto;padding:0 18px}.intro{text-align:center;margin-bottom:28px}.intro h2{font-size:30px;color:#0b3558;margin:0 0 10px}.intro p{color:#5d6e78;max-width:700px;margin:0 auto;line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.card{background:#fff;border:1px solid #dce5e9;border-radius:18px;padding:26px;box-shadow:0 8px 26px #102a4312;display:flex;flex-direction:column;min-height:255px}.card h3{margin:0 0 10px;color:#0b3558;font-size:24px}.card p{color:#657983;line-height:1.55;margin:0 0 22px}.tag{display:inline-block;align-self:flex-start;background:#eef5f8;color:#0b3558;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;margin-bottom:15px}.btn{margin-top:auto;display:block;text-align:center;text-decoration:none;border-radius:11px;padding:13px 16px;font-weight:800;background:#0b3558;color:#fff}.btn:hover{filter:brightness(.95)}
+footer{text-align:center;color:#73838b;font-size:13px;padding:34px 18px}.note{margin-top:24px;background:#eef4f7;border-radius:12px;padding:13px 16px;color:#5d6e78;font-size:13px;text-align:center}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.head{align-items:flex-start}.logo{width:58px;height:58px}h1{font-size:23px}.intro h2{font-size:25px}main{margin-top:28px}}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">
-    <img src="logo-region-olancho.png" class="brand-logo" alt="Región Sanitaria de Olancho">
-    <div><h1>SIRRO</h1><p>Sistema de Referencia–Respuesta Olancho</p></div>
-  </div>
-  <div class="top-actions"><button id="helpBtn" class="help-btn hidden">AYUDA</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
-</header>
-
-<main class="wrap">
-<section id="loginView" class="card narrow login-card">
-  <img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho">
-  <h2>Ingreso a SIRRO</h2>
-  <p class="hint">Base central segura · Supabase</p>
-  <label>Usuario<input id="loginUser" autocomplete="username"></label>
-  <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
-  <button id="loginBtn">Ingresar</button>
-  <button id="forgotPasswordBtn" type="button" class="link-btn">¿Olvidaste tu contraseña?</button>
-  <button id="installBtn" type="button" class="ghost install-btn">Instalar SIRRO</button>
-  <p id="installHelp" class="hint install-help">Instale SIRRO para abrirlo como una aplicación.</p>
-  <div id="loginMsg"></div>
-</section>
-
-<section id="forgotPasswordView" class="card narrow login-card hidden">
-  <h2>Recuperar contraseña</h2>
-  <p class="hint">Escriba su usuario o correo. Si la cuenta existe, recibirá un enlace para crear una nueva contraseña.</p>
-  <label>Usuario o correo<input id="recoveryUser" autocomplete="username"></label>
-  <button id="sendRecoveryBtn" type="button">Enviar enlace de recuperación</button>
-  <button id="backToLoginBtn" type="button" class="ghost">Volver al ingreso</button>
-  <div id="recoveryMsg"></div>
-</section>
-
-<section id="updatePasswordView" class="card narrow login-card hidden">
-  <h2>Crear nueva contraseña</h2>
-  <label>Nueva contraseña<input id="recoveryPassword" type="password" minlength="12" autocomplete="new-password"></label>
-  <label>Confirmar contraseña<input id="recoveryPasswordConfirm" type="password" minlength="12" autocomplete="new-password"></label>
-  <button id="updatePasswordBtn" type="button">Guardar nueva contraseña</button>
-  <div id="updatePasswordMsg"></div>
-</section>
-
-<section id="appView" class="hidden">
-  <div class="userbar card"><div><strong id="userName"></strong><br><span id="userMeta"></span></div><span id="connState" class="badge">Conectado</span></div>
-  <nav class="tabs card" id="tabs">
-    <button data-tab="inicio" class="active">Inicio</button>
-    <button data-tab="nueva">Nueva referencia</button>
-    <button data-tab="recibidas">Recibidas</button>
-    <button data-tab="seguimiento">Seguimiento</button>
-    <button data-tab="notificaciones">Notificaciones <span id="notificationCount"></span></button>
-    <button data-tab="monitoreo">Monitoreo</button>
-    <button data-tab="evaluacion">Evaluación R/R</button>
-    <button data-tab="usuarios">Usuarios</button>
-    <button data-tab="auditoria">Auditoría</button>
-  </nav>
-
-  <section id="tab-inicio" class="tabpane">
-    <div class="grid stats">
-      <article class="card"><span>Establecimientos</span><strong id="statEst">—</strong></article>
-      <article class="card"><span>Casos</span><strong id="statCasos">—</strong></article>
-      <article class="card"><span>Abiertos</span><strong id="statAbiertos">—</strong></article>
-      <article class="card"><span>Cerrados</span><strong id="statCerrados">—</strong></article>
+<header>
+  <div class="head">
+    <img class="logo" src="logo-region-olancho.png" alt="Región Sanitaria de Olancho">
+    <div>
+      <h1>Portal Regional de Olancho</h1>
+      <p class="sub">Secretaría de Salud · Región Sanitaria de Olancho</p>
     </div>
-    <article class="card"><h2>Flujo SIRRO</h2><p>Referencia → envío → recepción → atención → respuesta/contrarreferencia o referencia secundaria → confirmación y cierre.</p></article>
+  </div>
+</header>
+<main>
+  <section class="intro">
+    <h2>Sistemas digitales regionales</h2>
+    <p>Seleccione la plataforma a la que desea ingresar. SIRRO y Encuestas Olancho funcionan como aplicaciones independientes.</p>
   </section>
-
-  <section id="tab-nueva" class="tabpane hidden">
-    <form id="refForm" class="card formgrid">
-      <h2>Nueva referencia</h2>
-      <div class="readonlybox full" id="originBox"></div>
-      <label>Nombre del paciente<input id="patientName" required></label>
-      <label>Identidad<input id="patientId" inputmode="numeric" minlength="13" maxlength="13" pattern="[0-9]{13}" required></label>
-      <label>Teléfono de contacto<input id="patientContact" inputmode="numeric" minlength="8" maxlength="8" pattern="[0-9]{8}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,8)" required></label>
-      <label>Tipo<select id="refType"><option value="NO_URGENTE">No urgente</option><option value="URGENTE">Urgente</option></select></label>
-      <label>Motivo<select id="refReason">
-        <option value="EVALUACION_ESPECIALIZADA">Evaluación especializada</option>
-        <option value="EMERGENCIA_URGENCIA">Emergencia / urgencia</option>
-        <option value="HOSPITALIZACION">Hospitalización</option>
-        <option value="EXAMEN_PROCEDIMIENTO">Examen / procedimiento</option>
-        <option value="ATENCION_MATERNA">Atención materna</option>
-        <option value="CE_PEDIATRIA">C.E. Pediatría</option>
-        <option value="CE_GINECOOBSTETRICIA">C.E. GinecoObstetricia</option>
-        <option value="CE_MEDICINA_INTERNA">C.E. Medicina Interna</option>
-        <option value="CE_CIRUGIA">C.E. Cirugía</option>
-        <option value="CE_ORTOPEDIA">C.E. Ortopedia</option>
-        <option value="OTRO">Otro</option>
-      </select></label>
-      <label id="otherReasonWrap" class="full hidden">Especifique otro motivo<input id="otherReason" maxlength="200"></label>
-      <label>Servicio solicitado<input id="requestedService" maxlength="200" required></label>
-      <label>Diagnóstico o impresión diagnóstica<input id="diagnosis" maxlength="300" required></label>
-      <label class="full">Destino<select id="destFacility" required></select></label>
-      <label class="full">Observación<textarea id="observation"></textarea></label>
-      <button type="submit">Registrar y enviar referencia</button>
-      <div id="refMsg" class="full"></div>
-    </form>
-  </section>
-
-  <section id="tab-recibidas" class="tabpane hidden">
-    <article class="card"><h2>Referencias recibidas</h2><div id="receivedList"></div></article>
-  </section>
-
-  <section id="tab-seguimiento" class="tabpane hidden">
+  <section class="grid">
     <article class="card">
-      <h2>Seguimiento</h2>
-      <div class="filters"><input id="searchRef" placeholder="Buscar código o paciente"><select id="statusFilter"><option value="">Todos los estados</option></select><button id="refreshBtn" type="button">Actualizar</button></div>
-      <div id="trackingList"></div>
+      <span class="tag">REFERENCIA Y RESPUESTA</span>
+      <h3>SIRRO</h3>
+      <p>Sistema de Referencia–Respuesta Olancho para la gestión y seguimiento administrativo de referencias entre establecimientos de salud.</p>
+      <a class="btn" href="https://sirro-central.vercel.app" target="_blank" rel="noopener noreferrer">INGRESAR A SIRRO</a>
+    </article>
+    <article class="card">
+      <span class="tag">SATISFACCIÓN DE USUARIOS</span>
+      <h3>Encuestas Olancho</h3>
+      <p>Plataforma regional para la aplicación y administración de encuestas de satisfacción de los usuarios de los servicios de salud.</p>
+      <a class="btn" href="https://encuestas-olancho.vercel.app" target="_blank" rel="noopener noreferrer">INGRESAR A ENCUESTAS</a>
     </article>
   </section>
-
-  <section id="tab-notificaciones" class="tabpane hidden">
-    <article class="card">
-      <h2>Notificaciones</h2>
-      <div id="notificationsList"></div>
-      <div class="notification-settings">
-        <h3>Notificaciones por correo electrónico</h3>
-        <p class="muted">Usted decide cuáles avisos desea recibir. Los mensajes incluyen únicamente información administrativa y un enlace seguro para abrir SIRRO.</p>
-        <label class="switch-row"><input id="emailNotificationsEnabled" type="checkbox"> Activar notificaciones por correo electrónico</label>
-        <div id="emailNotificationOptions" class="notification-options">
-          <label><input type="checkbox" data-email-type="NUEVA_REFERENCIA"> Nueva referencia recibida</label>
-          <label><input type="checkbox" data-email-type="REFERENCIA_URGENTE"> Referencia urgente</label>
-          <label><input type="checkbox" data-email-type="RESPUESTA_DISPONIBLE"> Respuesta o contrarreferencia disponible</label>
-          <label><input type="checkbox" data-email-type="REFERENCIA_RECHAZADA"> Referencia rechazada</label>
-          <label><input type="checkbox" data-email-type="REFERENCIA_SECUNDARIA"> Referencia secundaria</label>
-          <label><input type="checkbox" data-email-type="CIERRE_ADMINISTRATIVO"> Cierre administrativo externo</label>
-          <label><input type="checkbox" data-email-type="ALERTA_AMARILLA"> Alerta amarilla · 24 horas</label>
-          <label><input type="checkbox" data-email-type="ALERTA_ROJA"> Alerta roja · 48 horas</label>
-        </div>
-        <div class="actions"><button id="saveEmailPreferencesBtn" type="button">Guardar preferencias</button></div>
-        <div id="emailPreferencesMsg" class="settings-status"></div>
-      </div>
-    </article>
-  </section>
-
-  <section id="tab-monitoreo" class="tabpane hidden">
-    <article class="card"><h2>Monitoreo</h2><p class="muted">Vista según el alcance permitido por el perfil y las políticas de seguridad de la base.</p><div id="monitoring" class="monitor"></div></article>
-  </section>
-
-  <section id="tab-evaluacion" class="tabpane hidden">
-    <article class="card"><h2>Evaluación hospitalaria R/R</h2><div id="rrSummary" class="grid stats"></div><div id="rrHospitals" class="monitor"></div></article>
-  </section>
-
-  <section id="tab-usuarios" class="tabpane hidden">
-    <article class="card">
-      <h2>Usuarios y permisos</h2>
-      <form id="userForm" class="formgrid">
-        <label>Nombre completo<input id="newName" required></label>
-        <label>Usuario<input id="newUsername" required autocomplete="off"></label>
-        <label>Contraseña<input id="newPassword" type="password" minlength="12" required autocomplete="new-password"></label>
-        <label>Confirmar contraseña<input id="confirmPassword" type="password" minlength="12" required autocomplete="new-password"></label>
-        <label>Identidad<input id="newIdentity" pattern="[0-9]{13}" minlength="13" maxlength="13" required></label>
-        <label>Correo personal/institucional<input id="newEmail" type="email" required></label>
-        <label>Teléfono<input id="newPhone" pattern="[0-9]{8}" minlength="8" maxlength="8" required></label>
-        <label>Cargo / función<input id="newJob" required></label>
-        <label>Rol<select id="newRole" required>
-          <option value="">Seleccione</option>
-          <option value="ADMIN_REGIONAL">Administrador Regional</option><option value="ECOR">ECOR</option><option value="JEFE_MUNICIPAL">Jefe Municipal</option>
-          <option value="USUARIO_US">Usuario de Establecimiento</option><option value="USUARIO_HOSPITAL">Usuario de Hospital</option><option value="AUDITOR_CONSULTA">Auditor / Consulta</option>
-        </select></label>
-        <label id="newEcorWrap" class="hidden">ECOR<select id="newEcor"></select></label>
-        <label id="newMunicipioWrap" class="hidden">Municipio<select id="newMunicipio"></select></label>
-        <label id="newEstWrap" class="hidden">Establecimiento<select id="newEst"></select></label>
-        <label id="newScopeWrap" class="hidden">Alcance de consulta<select id="newScope">
-          <option value="ESTABLECIMIENTO">Una unidad de salud o establecimiento</option>
-          <option value="MUNICIPIO">Un municipio</option>
-          <option value="ECOR">Un ECOR</option>
-          <option value="DEPARTAMENTO">Todo el departamento de Olancho</option>
-        </select></label>
-        <label id="newMonitorWrap" class="hidden">Centro Regional de Monitoría<select id="newMonitorPermission"><option value="false">No habilitado</option><option value="true">Habilitado</option></select></label>
-        <button type="submit">Crear usuario</button>
-        <div id="userMsg" class="full"></div>
-      </form>
-      <div class="user-form-extra">
-        <h3>Reinicio general de pruebas</h3>
-        <p class="muted">Solo para Administrador Regional. Elimina referencias, tramos y movimientos de prueba, pero conserva usuarios, establecimientos, municipios, ECOR, rutas y configuración.</p>
-        <div class="actions">
-          <button type="button" class="ghost" id="setResetKeyBtn">Configurar / cambiar clave especial</button>
-          <button type="button" class="danger" id="resetAllBtn">Borrar datos de prueba y comenzar de nuevo</button>
-        </div>
-        <div id="resetMsg"></div>
-      </div>
-      <div id="usersList"></div>
-    </article>
-  </section>
-
-  <section id="tab-auditoria" class="tabpane hidden">
-    <article class="card"><h2>Auditoría</h2><div id="auditList"></div></article>
-  </section>
-</section>
-
-<section id="helpView" class="card help-panel hidden" aria-live="polite">
-  <button id="closeHelpBtn" class="ghost help-close">Cerrar</button>
-  <h2>AYUDA SIRRO</h2>
-  <p id="helpRole" class="muted"></p>
-  <div id="helpContent"></div>
-</section>
+  <div class="note">Este portal únicamente facilita el acceso. Cada aplicación conserva su funcionamiento, usuarios y datos de forma independiente.</div>
 </main>
-
-<script src="./app-main.js"></script>
-<script src="./sirro-core.js"></script>
-<script src="./followup.js"></script>
-<script src="./observacion-obstetrica.js"></script>
-<script src="./reportes.js"></script>
-<script src="./pendientes.js"></script>
-<script src="./admin-pruebas.js"></script>
-<script src="./borrado-referencia-pruebas.js"></script>
-<script src="./hospital-referral-specialties.js"></script>
-<script src="./specialty-selector-fix.js"></script>
-<script>
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}
-</script>
+<footer>Región Sanitaria de Olancho · Secretaría de Salud</footer>
 </body>
 </html>
