@@ -26,6 +26,12 @@
 
   function targetFor(kind) { return kind === 'login' ? '#loginMsg' : '#recoveryMsg'; }
 
+  function normalizeLoginIdentifier(value) {
+    const u = String(value || '').trim().toLowerCase();
+    const match = u.match(/^([^@]+)@sirro\.net$/i);
+    return match ? match[1] : u;
+  }
+
   function clearTurnstileLoader() {
     try { document.querySelector('script[data-sirro-turnstile]')?.remove(); } catch {}
     window.__sirroTurnstilePromise = null;
@@ -182,7 +188,8 @@
 
   async function secureLogin() {
     if (typeof showMsg !== 'function') return;
-    const u = document.getElementById('loginUser')?.value.trim() || '';
+    const rawUser = document.getElementById('loginUser')?.value.trim() || '';
+    const u = normalizeLoginIdentifier(rawUser);
     const p = document.getElementById('loginPass')?.value || '';
     if (!u || !p) return showMsg('#loginMsg', 'Escriba usuario y contraseña.', 'error');
     if (!tokens.login) {
@@ -225,7 +232,8 @@
   }
 
   async function secureSendRecovery() {
-    const user = document.getElementById('recoveryUser')?.value.trim() || '';
+    const rawUser = document.getElementById('recoveryUser')?.value.trim() || '';
+    const user = normalizeLoginIdentifier(rawUser);
     if (!user) return showMsg('#recoveryMsg', 'Escriba su usuario o correo.', 'error');
     if (!tokens.recovery) {
       mount('recovery');
@@ -252,12 +260,12 @@
   window.sendRecovery = secureSendRecovery;
   window.showForgotPassword = secureShowForgotPassword;
   window.showLogin = secureShowLogin;
-  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-5', reset, mount, login: secureLogin });
+  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-6', reset, mount, login: secureLogin });
 
-  document.getElementById('loginBtn')?.addEventListener('click', e => { e.preventDefault(); secureLogin(); });
-  document.getElementById('forgotPasswordBtn')?.addEventListener('click', e => { e.preventDefault(); secureShowForgotPassword(); });
-  document.getElementById('sendRecoveryBtn')?.addEventListener('click', e => { e.preventDefault(); secureSendRecovery(); });
-  document.getElementById('backToLoginBtn')?.addEventListener('click', e => { e.preventDefault(); secureShowLogin(); });
+  document.getElementById('loginBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureLogin(); }, true);
+  document.getElementById('forgotPasswordBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureShowForgotPassword(); }, true);
+  document.getElementById('sendRecoveryBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureSendRecovery(); }, true);
+  document.getElementById('backToLoginBtn')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); secureShowLogin(); }, true);
 
   mount('login');
 })();
