@@ -17,6 +17,19 @@
     CONTROL_2: Object.freeze({ numero: 2, desdeDias: 3, hastaDias: 7 }),
     CONTROL_3: Object.freeze({ numero: 3, dia: 40 })
   });
+  const SPECIALTIES = Object.freeze(['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia']);
+
+  const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const specialtyLabel = caseValue => {
+    const motive = normalize(caseValue?.motivo);
+    if (motive === 'CE_PEDIATRIA') return SPECIALTIES[0];
+    if (motive === 'CE_GINECOOBSTETRICIA') return SPECIALTIES[1];
+    if (motive === 'CE_MEDICINA_INTERNA') return SPECIALTIES[2];
+    if (motive === 'CE_CIRUGIA') return SPECIALTIES[3];
+    if (motive === 'CE_ORTOPEDIA') return SPECIALTIES[4];
+    return caseValue?.servicio_requerido || 'Consulta Externa';
+  };
+  const utils = Object.freeze({ normalize, specialtyLabel });
 
   const client = () => {
     if (typeof sb === 'undefined' || !sb) throw new Error('Cliente Supabase no disponible');
@@ -45,7 +58,7 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-14', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-15', constants: Object.freeze({ ROLES, TZ, PUERPERIO, SPECIALTIES }), utils, api, errors, authz });
 
   function loadStyle(href, marker) {
     if (document.querySelector(`link[data-sirro-style="${marker}"]`)) return;
