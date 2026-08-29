@@ -1,11 +1,13 @@
 (() => {
   const isCitas = () => typeof profile !== 'undefined' && profile?.rol === 'USUARIO_HOSPITAL' && profile?.tipo_usuario_hospital === 'ATENCION_PACIENTE_CITAS';
-  const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const norm = window.SIRRO?.utils?.normalize || (v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase());
+  const sharedSpecialtyLabel = window.SIRRO?.utils?.specialtyLabel;
   const isCeCase = c => norm(c?.motivo).startsWith('CE_');
   const ceRowsFor = id => (typeof followups!=='undefined'&&Array.isArray(followups)?followups:[]).filter(s=>String(s.tramo_id)===String(id)&&s.tipo==='CONSULTA_EXTERNA');
   const hasScheduledCe = (id,html='') => ceRowsFor(id).some(s=>s.estado==='PROGRAMADA'&&s.fecha_cita) || /Cita programada para/i.test(String(html));
 
   function specialtyLabel(c){
+    if (typeof sharedSpecialtyLabel === 'function') return sharedSpecialtyLabel(c);
     const m=norm(c?.motivo);
     if(m==='CE_PEDIATRIA') return 'Pediatría';
     if(m==='CE_GINECOOBSTETRICIA') return 'Gineco-Obstetricia';
