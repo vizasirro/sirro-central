@@ -1,7 +1,12 @@
 (() => {
   const originalComplete = window.completePuerperal;
   const originalRegisterDelivery = window.registerDelivery;
+  const appAuthenticated = () => {
+    const app=document.getElementById('appView');
+    return !!(app && !app.classList.contains('hidden') && typeof currentUser!=='undefined' && currentUser && typeof profile!=='undefined' && profile);
+  };
   const getRow = async (id,n) => {
+    if(!appAuthenticated()) return null;
     try {
       const {data,error}=await sb.from('seguimientos_postreferencia').select('tramo_id,numero_control,estado,fecha_base,ventana_desde,ventana_hasta').eq('tramo_id',id).eq('tipo','PUERPERAL').eq('numero_control',n).maybeSingle();
       if(error) throw error; return data;
@@ -49,7 +54,7 @@
   }
 
   async function applyGuard(){
-    if(typeof sb==='undefined') return;
+    if(typeof sb==='undefined' || !appAuthenticated()) return;
     let rows=[];
     try{const {data,error}=await sb.from('seguimientos_postreferencia').select('tramo_id,numero_control,estado,ventana_desde,ventana_hasta').eq('tipo','PUERPERAL');if(error)throw error;rows=data||[];}catch{return;}
     const map=new Map(rows.map(s=>[`${s.tramo_id}:${Number(s.numero_control||1)}`,s]));
