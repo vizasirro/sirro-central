@@ -45,7 +45,18 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-13', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-14', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+
+  function loadStyle(href, marker) {
+    if (document.querySelector(`link[data-sirro-style="${marker}"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.dataset.sirroStyle = marker;
+    document.head.appendChild(link);
+  }
+
+  loadStyle('./sirro-theme.css', 'SIRRO_THEME');
 
   function renderPublicUpdate() {
     try {
