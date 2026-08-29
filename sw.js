@@ -1,10 +1,10 @@
-const CACHE='sirro-v051';
+const CACHE='sirro-v052';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./sirro-theme.css',
   './app-main.js','./sirro-core.js','./startup-ready.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js',
   './followup.js','./observacion-obstetrica.js','./reportes.js','./pendientes.js','./admin-pruebas.js','./borrado-referencia-pruebas.js',
   './specialty-filter.js','./specialty-transfers.js','./specialty-selector-fix.js','./appointment-role.js','./ce-referral-hint.js',
-  './hospital-profile.js','./gerencia-profile.js','./administrador-profile.js','./maternal-monitor.js','./maternal-monitor-style.js'
+  './hospital-profile.js','./gerencia-profile.js','./administrador-profile.js','./maternal-monitor.js','./maternal-monitor-style.js','./regression-guard.js'
 ];
 
 self.addEventListener('install',e=>{
