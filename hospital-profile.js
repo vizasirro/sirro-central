@@ -8,8 +8,8 @@
     AUX_ENFERMERIA:'AUXILIAR DE ENFERMERÍA',
     GESTION_CITAS:'GESTIÓN DE CITAS'
   });
-  const SPECIALTIES=['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia'];
-  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const SPECIALTIES=window.SIRRO?.constants?.SPECIALTIES || ['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia'];
+  const norm=window.SIRRO?.utils?.normalize || (v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase());
   // Compatibilidad: usuarios antiguos con DIRECCIÓN HOSPITAL conservan su acceso de solo supervisión.
   const isDirection=p=>p?.rol==='USUARIO_HOSPITAL'&&norm(p?.cargo_funcion)==='DIRECCION HOSPITAL';
 
