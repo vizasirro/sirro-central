@@ -33,7 +33,7 @@
   function lockRegisteredDeliveryBoxes(){
     document.querySelectorAll('.notice').forEach(box=>{
       const strong=box.querySelector(':scope > strong');
-      if(!strong||strong.textContent.trim()!=='Fecha y hora del parto'||!box.textContent.includes('Registrada:'))return;
+      if(!strong||strong.textContent.trim().replace(/PARTO REGISTRADO/g,'').trim()!=='Fecha y hora del parto'||!box.textContent.includes('Registrada:'))return;
       box.classList.add('sirro-delivery-registered');
       const textNodes=[...box.childNodes];
       const regNode=textNodes.find(n=>n.nodeType===Node.TEXT_NODE && n.textContent.includes('Registrada:'));
@@ -56,13 +56,23 @@
   async function applyGuard(){
     if(typeof sb==='undefined' || !appAuthenticated()) return;
     let rows=[];
-    try{const {data,error}=await sb.from('seguimientos_postreferencia').select('tramo_id,numero_control,estado,ventana_desde,ventana_hasta').eq('tipo','PUERPERAL');if(error)throw error;rows=data||[];}catch{return;}
+    try{const {data,error}=await sb.from('seguimientos_postreferencia').select('tramo_id,numero_control,estado,fecha_base,ventana_desde,ventana_hasta').eq('tipo','PUERPERAL');if(error)throw error;rows=data||[];}catch{return;}
     const map=new Map(rows.map(s=>[`${s.tramo_id}:${Number(s.numero_control||1)}`,s]));
     document.querySelectorAll('button[onclick*="completePuerperal("]').forEach(btn=>{
       const m=(btn.getAttribute('onclick')||'').match(/completePuerperal\('([^']+)',\s*(\d+)\)/);if(!m)return;
       const s=map.get(`${m[1]}:${Number(m[2])}`);if(!s)return;
       const open=windowOpen(s);btn.disabled=!open;
       if(!open){btn.textContent=`Disponible desde ${new Date(s.ventana_desde).toLocaleString('es-HN',{timeZone:'America/Tegucigalpa',hour12:false})}`;btn.title='El control se habilita únicamente al iniciar su ventana correspondiente.';}
+    });
+    document.querySelectorAll('button[onclick*="registerDelivery("]').forEach(btn=>{
+      const m=(btn.getAttribute('onclick')||'').match(/registerDelivery\('([^']+)'\)/);if(!m)return;
+      const s=map.get(`${m[1]}:1`);if(!s?.fecha_base)return;
+      const box=btn.closest('.notice');if(!box)return;
+      const strong=box.querySelector(':scope > strong');if(!strong)return;
+      if(!box.textContent.includes('Registrada:')){
+        const v=new Date(s.fecha_base).toLocaleString('es-HN',{timeZone:'America/Tegucigalpa',hour12:false});
+        strong.after(document.createTextNode(` Registrada: ${v}`));
+      }
     });
     document.querySelectorAll('.notice').forEach(box=>{
       const strong=box.querySelector(':scope > strong');if(!strong||!/^Control puerperal 3$/.test(strong.textContent.trim()))return;
