@@ -27,6 +27,7 @@
     const base = tramoItem;
     const wrapped = function(t, withActions = true){
       const html = base.apply(this, arguments);
+      if (String(html || '').includes('sirro-response-detail')) return html;
       const extra = responseHtml(t);
       if (!extra) return html;
       const i = html.lastIndexOf('</div>');
@@ -53,5 +54,5 @@
     refreshAll = wrappedRefresh;
   }
 
-  window.SIRRO_RESPONSE_DETAIL_UI = Object.freeze({version:'response-detail-ui-1', latestResponseMovement});
+  window.SIRRO_RESPONSE_DETAIL_UI = Object.freeze({version:'response-detail-ui-2', latestResponseMovement});
 })();
