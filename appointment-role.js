@@ -36,6 +36,46 @@
     window.tramoItem=wrapped;
   }
 
+  function hasVisibleCeCase(){
+    if(!isCitas() || typeof tramos==='undefined' || !Array.isArray(tramos)) return false;
+    return tramos.some(t=>{
+      if(String(t?.establecimiento_destino_id||'')!==String(profile?.establecimiento_id||'')) return false;
+      const c=typeof caseOf==='function'?caseOf(t?.caso_id):null;
+      return !!c && isCeCase(c) && !['CERRADO','CIERRE_ADMINISTRATIVO_EXTERNO'].includes(String(t?.estado_actual||''));
+    });
+  }
+
+  function sanitizePendingUi(){
+    if(!isCitas()) return;
+    const forbidden=['RESPUESTA / CONTRARREFERENCIA PENDIENTE','EVALUACION PENDIENTE','REFERENCIA POR RECIBIR','REGISTRAR FECHA Y HORA DEL PARTO','RESPUESTA LISTA PARA CONFIRMAR','REFERENCIA RECHAZADA POR CORREGIR'];
+    const details=document.getElementById('sirroPendingDetails');
+    if(details){
+      [...details.children].forEach(row=>{
+        const text=norm(row.textContent);
+        if(forbidden.some(x=>text.includes(x))) row.remove();
+      });
+      const actionable=[...details.children].filter(x=>x.querySelector('button') && !norm(x.textContent).startsWith('REQUIERE MI ATENCION') && !norm(x.textContent).startsWith('LO PENDIENTE'));
+      if(!actionable.length && details.textContent.trim()){
+        const headers=[...details.children].filter(x=>!x.querySelector('button'));
+        if(headers.length<=1) details.innerHTML='<div class="notice ok">No hay acciones pendientes para Gestión de Citas.</div>';
+      }
+    }
+
+    // Si no existe ninguna referencia de Consulta Externa visible, cualquier pendiente clínico agregado
+    // por el tablero general no corresponde a este perfil.
+    if(!hasVisibleCeCase()){
+      const preview=document.getElementById('sirroPendingPreview');
+      preview?.querySelectorAll('button').forEach(b=>{
+        const text=norm(b.textContent);
+        if(text.includes('REQUIERE MI ATENCION') || text.includes('PENDIENTE')) b.remove();
+      });
+      const count=document.getElementById('sirroPendingCount');
+      if(count) count.textContent='0';
+      document.getElementById('sirroRequiresAttentionBanner')?.remove();
+      if(preview && !preview.querySelector('button')) preview.innerHTML='<div class="notice ok"><strong>Sin pendientes.</strong> No tiene acciones de Gestión de Citas pendientes en este momento.</div>';
+    }
+  }
+
   function applyCitasUi(){
     if(!isCitas()) return;
     const nueva=document.querySelector('#tabs button[data-tab="nueva"]');
@@ -50,6 +90,7 @@
         if(card&&/Cita programada para/i.test(card.textContent||'')) b.textContent='REPROGRAMAR CITA';
       }
     });
+    sanitizePendingUi();
   }
 
   function wrapBlocked(name,message){
@@ -105,5 +146,5 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true}); else install();
   window.addEventListener('pageshow',install);window.addEventListener('sirro-specialty-filtered',install);setInterval(install,1200);
-  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi});
+  window.SIRRO_APPOINTMENT_ROLE=Object.freeze({isCitas,specialtyLabel,isCeCase,applyCitasUi,sanitizePendingUi});
 })();
