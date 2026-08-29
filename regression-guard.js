@@ -42,7 +42,6 @@
     const p=currentProfile();
     if(!p || !isClinicalRole() || !p.establecimiento_id) return 0;
 
-    // Gestión de Citas no recibe pendientes clínicos. Solo cuenta avisos propios de citas.
     if(isAppointmentRole()){
       return allNotifications().filter(n=>{
         if(n.leida) return false;
@@ -79,7 +78,7 @@
     if(!app || !userbar || !currentProfile()) return;
     let banner=document.getElementById('sirroRequiresAttentionBanner');
     const count=requiresAttentionCount();
-    if(!count){ banner?.remove(); return; }
+    if(!count){ if(banner) banner.remove(); return; }
     if(!banner){
       banner=document.createElement('button');
       banner.id='sirroRequiresAttentionBanner';
@@ -88,10 +87,17 @@
       banner.addEventListener('click',openPending);
       userbar.insertAdjacentElement('afterend',banner);
     }
-    banner.textContent=`REQUIERE MI ATENCIÓN · ${count}`;
+    const nextText=`REQUIERE MI ATENCIÓN · ${count}`;
+    if(banner.textContent!==nextText) banner.textContent=nextText;
   }
 
-  function apply(){ enforceRoleUI(); renderAttentionBanner(); }
+  let applying=false;
+  function apply(){
+    if(applying) return;
+    applying=true;
+    try { enforceRoleUI(); renderAttentionBanner(); }
+    finally { applying=false; }
+  }
 
   const prevConfigure=typeof configureTabs==='function'?configureTabs:null;
   if(prevConfigure){
@@ -103,9 +109,12 @@
     refreshAll=async function(){ const r=await prevRefresh.apply(this,arguments); apply(); return r; };
   }
 
-  const observer=new MutationObserver(()=>{
+  const observer=new MutationObserver(mutations=>{
+    if(applying) return;
+    const onlyBanner=mutations.length>0 && mutations.every(m=>m.target?.id==='sirroRequiresAttentionBanner' || m.target?.parentElement?.id==='sirroRequiresAttentionBanner');
+    if(onlyBanner) return;
     clearTimeout(window.__sirroRegressionGuardTimer);
-    window.__sirroRegressionGuardTimer=setTimeout(apply,50);
+    window.__sirroRegressionGuardTimer=setTimeout(apply,80);
   });
   const start=()=>{observer.observe(document.body,{childList:true,subtree:true});apply();};
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
