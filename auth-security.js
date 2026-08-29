@@ -55,10 +55,17 @@
     if (box) box.innerHTML = '';
   }
 
-  function scheduleRetry(kind) {
+  function targetFor(kind){
+    return kind === 'login' ? '#loginMsg' : '#recoveryMsg';
+  }
+
+  function scheduleRetry(kind, errorCode = '') {
+    const target = targetFor(kind);
     if (retryCount[kind] >= MAX_RETRIES) {
-      const target = kind === 'login' ? '#loginMsg' : '#recoveryMsg';
-      if (typeof showMsg === 'function') showMsg(target, 'La verificación de seguridad no pudo conectarse. Se reintentará al recargar la página.', 'error');
+      if (typeof showMsg === 'function') {
+        const code = errorCode ? ` Código Cloudflare: ${errorCode}.` : '';
+        showMsg(target, `La verificación de seguridad no pudo conectarse en ${location.hostname}.${code}`, 'error');
+      }
       return;
     }
     retryCount[kind] += 1;
@@ -89,12 +96,20 @@
         callback: token => {
           tokens[kind] = token || '';
           retryCount[kind] = 0;
-          const target = kind === 'login' ? '#loginMsg' : '#recoveryMsg';
+          const target = targetFor(kind);
           if (typeof showMsg === 'function' && token) showMsg(target, '');
         },
         'expired-callback': () => { tokens[kind] = ''; },
-        'timeout-callback': () => { tokens[kind] = ''; scheduleRetry(kind); },
-        'error-callback': () => { tokens[kind] = ''; scheduleRetry(kind); },
+        'timeout-callback': () => { tokens[kind] = ''; scheduleRetry(kind, 'timeout'); },
+        'error-callback': errorCode => {
+          tokens[kind] = '';
+          const target = targetFor(kind);
+          if (typeof showMsg === 'function' && errorCode) {
+            showMsg(target, `Error de verificación Cloudflare ${errorCode} en ${location.hostname}.`, 'error');
+          }
+          scheduleRetry(kind, errorCode || 'desconocido');
+          return true;
+        },
         retry: 'auto',
         'retry-interval': 2000,
         'refresh-expired': 'auto',
@@ -103,7 +118,9 @@
       });
     } catch (error) {
       clearTurnstileLoader();
-      scheduleRetry(kind);
+      const target = targetFor(kind);
+      if (typeof showMsg === 'function') showMsg(target, `No se pudo cargar Cloudflare Turnstile en ${location.hostname}.`, 'error');
+      scheduleRetry(kind, 'script');
     }
   }
 
@@ -160,7 +177,7 @@
   window.sendRecovery = secureSendRecovery;
   window.showForgotPassword = secureShowForgotPassword;
   window.showLogin = secureShowLogin;
-  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-2', reset, mount });
+  window.SIRRO_AUTH_SECURITY = Object.freeze({ version: 'auth-security-3', reset, mount });
 
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) loginBtn.onclick = secureLogin;
