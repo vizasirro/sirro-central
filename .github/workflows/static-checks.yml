@@ -11,16 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
+        shell: bash
         run: |
-          set -e
-          for f in \
-            app-main.js sirro-core.js startup-ready.js auth-security.js data-resilience.js \
-            pending-color-semantics.js followup.js reportes.js pendientes.js admin-pruebas.js \
-            borrado-referencia-pruebas.js specialty-filter.js specialty-transfers.js specialty-selector-fix.js \
-            appointment-role.js ce-referral-hint.js hospital-profile.js gerencia-profile.js administrador-profile.js \
-            maternal-monitor.js maternal-monitor-style.js observacion-obstetrica.js sw.js; do
-            node --check "$f"
-          done
+          set -euo pipefail
+          find . -type f -name '*.js' \
+            -not -path './node_modules/*' \
+            -not -path './.git/*' \
+            -print0 | sort -z | xargs -0 -n1 node --check
       - name: Protect retired RPCs from new frontend use
         shell: bash
         run: |
@@ -70,7 +67,7 @@ jobs:
           grep -q "startup-ready.js" sirro-core.js
           grep -q "ADMINISTRADOR" sirro-core.js
           grep -q "SIRRO_STARTUP_READY" startup-ready.js
-          grep -q "sirro-v043" sw.js
+          grep -Eq "^const CACHE='sirro-v[0-9]+';" sw.js
           grep -q "administrador-profile.js" sw.js
           grep -q "maternal-monitor.js" sw.js
       - name: CANDADO SIRRO - security contract
