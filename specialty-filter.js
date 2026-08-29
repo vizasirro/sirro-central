@@ -26,12 +26,28 @@
     const rows=tramos.filter(t=>String(t.establecimiento_destino_id||'')===String(profile.establecimiento_id||'')&&['ENVIADO','RECIBIDO','EN_ATENCION','EVALUADO','HOSPITALIZADO'].includes(String(t.estado_actual||''))&&belongsToCurrentSpecialist(t));
     box.innerHTML=rows.map(t=>tramoItem(t,true)).join('')||'<p class="muted">No hay referencias pendientes.</p>';
   }
-  function repaintSpecialistViews(){const key=specialistKey();if(!key)return;withSpecialistData(()=>{if(typeof renderStats==='function')renderStats();});renderSpecialistReceived();window.dispatchEvent(new Event('sirro-specialty-filtered'));}
+  function applySpecialistNavigation(){
+    const key=specialistKey();
+    if(!key)return;
+    const maternal=document.getElementById('maternalMonitorTabBtn');
+    if(maternal) maternal.classList.toggle('hidden',key!=='GINECOOBSTETRICIA');
+    if(key!=='GINECOOBSTETRICIA'){
+      const pane=document.getElementById('tab-materno');
+      if(pane&&!pane.classList.contains('hidden')){
+        pane.classList.add('hidden');
+        document.getElementById('tab-inicio')?.classList.remove('hidden');
+        document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+        document.querySelector('#tabs button[data-tab="inicio"]')?.classList.add('active');
+      }
+    }
+  }
+  function repaintSpecialistViews(){const key=specialistKey();if(!key)return;withSpecialistData(()=>{if(typeof renderStats==='function')renderStats();});renderSpecialistReceived();applySpecialistNavigation();window.dispatchEvent(new Event('sirro-specialty-filtered'));}
   const originalReceived=typeof window.renderReceived==='function'?window.renderReceived:(typeof renderReceived==='function'?renderReceived:null);
   if(originalReceived&&!originalReceived.__sirroSpecialtyFilter){const wrappedReceived=function(){const r=originalReceived.apply(this,arguments);renderSpecialistReceived();return r;};wrappedReceived.__sirroSpecialtyFilter=true;window.renderReceived=wrappedReceived;try{renderReceived=wrappedReceived;}catch{}}
-  document.addEventListener('click',e=>{const b=e.target.closest?.('#tabs button[data-tab="recibidas"],button[onclick*="recibidas"]');if(!b)return;setTimeout(renderSpecialistReceived,0);setTimeout(renderSpecialistReceived,150);});
+  document.addEventListener('click',e=>{const b=e.target.closest?.('#tabs button[data-tab="recibidas"],button[onclick*="recibidas"]');if(b){setTimeout(renderSpecialistReceived,0);setTimeout(renderSpecialistReceived,150);}setTimeout(applySpecialistNavigation,0);});
+  const tabs=document.getElementById('tabs');if(tabs)new MutationObserver(()=>applySpecialistNavigation()).observe(tabs,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
   const originalRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;if(originalRefresh&&!originalRefresh.__sirroSpecialtyFilter){const wrapped=async function(){const result=await originalRefresh.apply(this,arguments);await loadProgrammedAppointments();repaintSpecialistViews();return result;};wrapped.__sirroSpecialtyFilter=true;window.refreshAll=wrapped;}
-  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments,renderSpecialistReceived});
-  const start=async()=>{await loadProgrammedAppointments();repaintSpecialistViews();};
+  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments,renderSpecialistReceived,applySpecialistNavigation});
+  const start=async()=>{await loadProgrammedAppointments();repaintSpecialistViews();setTimeout(renderSpecialistReceived,300);setTimeout(applySpecialistNavigation,700);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
