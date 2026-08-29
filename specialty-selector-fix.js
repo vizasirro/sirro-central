@@ -1,5 +1,5 @@
 (() => {
-  const specialties=['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia'];
+  const specialties=window.SIRRO?.constants?.SPECIALTIES || ['Pediatría','Gineco-Obstetricia','Medicina Interna','Cirugía','Ortopedia'];
 
   function upgradeCreateSpecialtyField(){
     const current=document.getElementById('newSpecialty');
@@ -70,7 +70,7 @@
 /* Regla de oro obstétrica: la auxiliar hospitalaria únicamente registra fecha y hora del parto,
    y solo después de que la paciente haya sido recibida como HOSPITALIZADA. */
 (() => {
-  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const norm=window.SIRRO?.utils?.normalize || (v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase());
   const isAuxiliar=()=>{
     if(profile?.rol!=='USUARIO_HOSPITAL')return false;
     const cargo=norm(profile?.cargo_funcion);
@@ -85,15 +85,6 @@
     wrapped.__sirroAuxGuard=true;window[name]=wrapped;
   }
   ['receiveTramo','rejectTramo','evaluateTramo','answerTramo','secondaryTramo','closeTramo','reorientTramo','completePuerperal','assignCeAppointment'].forEach(guardAction);
-
-  const originalRegister=window.registerDelivery;
-  if(typeof originalRegister==='function'){
-    window.registerDelivery=async function(id){
-      const t=Array.isArray(tramos)?tramos.find(x=>String(x.id)===String(id)):null;
-      if(!t||t.estado_actual!=='HOSPITALIZADO')return alert('La fecha y hora del parto solo pueden registrarse después de que la paciente haya sido recibida como hospitalizada.');
-      return originalRegister.apply(this,arguments);
-    };
-  }
 
   function cleanTramoHtml(t,html){
     if(!html)return html;
@@ -232,52 +223,4 @@
   document.head.appendChild(css);
 
   if(typeof renderReceived==='function')renderReceived();
-})();
-
-/* Resiliencia de red: evita exponer errores técnicos como "TypeError: Load failed" al usuario. */
-(() => {
-  const originalAlert=window.alert.bind(window);
-  const isNetworkError=v=>/load failed|failed to fetch|networkerror|network request failed|fetch failed|typeerror.*fetch|typeerror.*load/i.test(String(v||''));
-  let networkNoticeShown=false;
-
-  function showNetworkNotice(){
-    if(networkNoticeShown)return;
-    networkNoticeShown=true;
-    originalAlert('No fue posible completar la comunicación con SIRRO. Verifique la conexión y pulse Actualizar. No repita una acción clínica hasta confirmar en pantalla si el estado cambió.');
-    setTimeout(()=>{networkNoticeShown=false;},800);
-  }
-
-  function wrapAction(name){
-    const original=window[name];
-    if(typeof original!=='function'||original.__sirroNetworkGuard)return;
-    const wrapped=async function(...args){
-      let intercepted=false;
-      const savedAlert=window.alert;
-      window.alert=function(message){
-        if(isNetworkError(message)){intercepted=true;return;}
-        return savedAlert(message);
-      };
-      try{
-        return await original.apply(this,args);
-      }catch(error){
-        if(isNetworkError(error?.message||error)){intercepted=true;return;}
-        throw error;
-      }finally{
-        window.alert=savedAlert;
-        if(intercepted)showNetworkNotice();
-      }
-    };
-    wrapped.__sirroNetworkGuard=true;
-    window[name]=wrapped;
-  }
-
-  ['receiveTramo','evaluateTramo','rejectTramo','answerTramo','secondaryTramo','reorientTramo','markNotificationRead','closeTramo','registerDelivery','completePuerperal','assignCeAppointment','saveCeDateTime'].forEach(wrapAction);
-
-  window.addEventListener('unhandledrejection',event=>{
-    const reason=event?.reason;
-    if(isNetworkError(reason?.message||reason)){
-      event.preventDefault();
-      showNetworkNotice();
-    }
-  });
 })();
