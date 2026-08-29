@@ -11,6 +11,24 @@
   function belongsToCurrentSpecialist(t){const key=specialistKey();if(!key)return true;if(!appointmentReady(t))return false;const target=tramoSpecialty(t);return !target||target===key;}
   function visibleCaseIds(){const key=specialistKey();if(!key||typeof tramos==='undefined')return null;return new Set(tramos.filter(belongsToCurrentSpecialist).map(t=>String(t.caso_id)));}
   function withSpecialistData(render){const key=specialistKey();if(!key||typeof tramos==='undefined'||typeof cases==='undefined')return render();const allTramos=tramos,allCases=cases,ids=visibleCaseIds();tramos=allTramos.filter(belongsToCurrentSpecialist);cases=allCases.filter(c=>ids.has(String(c.id)));try{return render();}finally{tramos=allTramos;cases=allCases;}}
+  function installUrgentCeAnswer(){
+    const original=typeof answerTramo==='function'?answerTramo:window.answerTramo;
+    if(typeof original!=='function'||original.__sirroUrgentCeAnswer)return;
+    const wrapped=async function(id){
+      const t=typeof tramos!=='undefined'?tramos.find(x=>String(x.id)===String(id)):null;
+      const c=t&&typeof caseOf==='function'?caseOf(t.caso_id):null;
+      if(!t||!c||!isCeCase(c)||norm(c.tipo)!=='URGENTE')return original.apply(this,arguments);
+      const detail=prompt('Escriba la respuesta / contrarreferencia:');
+      if(!detail?.trim())return;
+      const mode=t.parent_tramo_id&&confirm('¿Enviar la respuesta directamente al establecimiento que originó el caso?\nAceptar: respuesta directa.\nCancelar: respuesta por la cadena de referencia.')?'DIRECTO_ORIGINADOR':'ORIGEN_TRAMO';
+      const {error}=await sb.rpc('sirro_enviar_respuesta_v2',{p_tramo:id,p_detalle:detail.trim(),p_modo:mode});
+      if(error)return alert(error.message);
+      if(typeof refreshAll==='function')await refreshAll();
+    };
+    wrapped.__sirroUrgentCeAnswer=true;
+    try{answerTramo=wrapped;}catch{}
+    window.answerTramo=wrapped;
+  }
   function specialistItem(t){
     if(typeof tramoItem==='function')return tramoItem(t,true);
     const c=typeof caseOf==='function'?caseOf(t.caso_id):null,o=typeof fac==='function'?fac(t.establecimiento_origen_id):null,d=typeof fac==='function'?fac(t.establecimiento_destino_id):null;
@@ -27,7 +45,7 @@
   const originalReceived=typeof window.renderReceived==='function'?window.renderReceived:(typeof renderReceived==='function'?renderReceived:null);if(originalReceived&&!originalReceived.__sirroSpecialtyFilter){const wrappedReceived=function(){const r=originalReceived.apply(this,arguments);renderSpecialistReceived();return r;};wrappedReceived.__sirroSpecialtyFilter=true;window.renderReceived=wrappedReceived;try{renderReceived=wrappedReceived;}catch{}}
   document.addEventListener('click',e=>{const b=e.target.closest?.('#tabs button[data-tab="recibidas"],button[onclick*="recibidas"]');if(b){renderSpecialistReceived();setTimeout(renderSpecialistReceived,50);setTimeout(renderSpecialistReceived,300);}setTimeout(applySpecialistNavigation,0);});
   const tabs=document.getElementById('tabs');if(tabs)new MutationObserver(()=>applySpecialistNavigation()).observe(tabs,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-  const originalRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;if(originalRefresh&&!originalRefresh.__sirroSpecialtyFilter){const wrapped=async function(){const result=await originalRefresh.apply(this,arguments);await loadProgrammedAppointments();repaintSpecialistViews();return result;};wrapped.__sirroSpecialtyFilter=true;window.refreshAll=wrapped;}
-  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments,renderSpecialistReceived,applySpecialistNavigation,specialistReceivedRows});
-  const start=async()=>{await loadProgrammedAppointments();repaintSpecialistViews();setTimeout(renderSpecialistReceived,300);setTimeout(applySpecialistNavigation,700);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  const originalRefresh=typeof window.refreshAll==='function'?window.refreshAll:null;if(originalRefresh&&!originalRefresh.__sirroSpecialtyFilter){const wrapped=async function(){const result=await originalRefresh.apply(this,arguments);await loadProgrammedAppointments();installUrgentCeAnswer();repaintSpecialistViews();return result;};wrapped.__sirroSpecialtyFilter=true;window.refreshAll=wrapped;}
+  window.SIRRO_SPECIALTY_FILTER=Object.freeze({canonical,specialistKey,caseSpecialty,tramoSpecialty,isCeCase,appointmentReady,belongsToCurrentSpecialist,repaintSpecialistViews,loadProgrammedAppointments,renderSpecialistReceived,applySpecialistNavigation,specialistReceivedRows,installUrgentCeAnswer});
+  const start=async()=>{await loadProgrammedAppointments();installUrgentCeAnswer();repaintSpecialistViews();setTimeout(installUrgentCeAnswer,250);setTimeout(renderSpecialistReceived,300);setTimeout(applySpecialistNavigation,700);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
