@@ -45,7 +45,7 @@
     if (typeof isAudit === 'function') isAudit = function(){ return ['ADMIN_REGIONAL','ADMINISTRADOR','AUDITOR_CONSULTA'].includes(profile?.rol); };
   } catch {}
 
-  window.SIRRO = Object.freeze({ version: 'core-12', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
+  window.SIRRO = Object.freeze({ version: 'core-13', constants: Object.freeze({ ROLES, TZ, PUERPERIO }), api, errors, authz });
 
   function renderPublicUpdate() {
     try {
@@ -89,6 +89,7 @@
   }
 
   loadModule('./startup-ready.js', 'SIRRO_STARTUP_READY');
+  loadModule('./auth-security.js', 'SIRRO_AUTH_SECURITY');
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
