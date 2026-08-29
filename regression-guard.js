@@ -6,6 +6,7 @@
   const currentProfile = () => typeof profile !== 'undefined' ? profile : null;
   const isAdminRole = () => ['ADMIN_REGIONAL','ADMINISTRADOR'].includes(currentProfile()?.rol);
   const isClinicalRole = () => ['USUARIO_HOSPITAL','USUARIO_US'].includes(currentProfile()?.rol);
+  const isAppointmentRole = () => currentProfile()?.rol === 'USUARIO_HOSPITAL' && currentProfile()?.tipo_usuario_hospital === 'ATENCION_PACIENTE_CITAS';
   const allTramos = () => typeof tramos !== 'undefined' && Array.isArray(tramos) ? tramos : [];
   const allNotifications = () => typeof notifications !== 'undefined' && Array.isArray(notifications) ? notifications : [];
 
@@ -40,6 +41,16 @@
   function requiresAttentionCount(){
     const p=currentProfile();
     if(!p || !isClinicalRole() || !p.establecimiento_id) return 0;
+
+    // Gestión de Citas no recibe pendientes clínicos. Solo cuenta avisos propios de citas.
+    if(isAppointmentRole()){
+      return allNotifications().filter(n=>{
+        if(n.leida) return false;
+        const text=norm(`${n.titulo||''} ${n.mensaje||''}`);
+        return text.includes('CITA') || text.includes('CONSULTA EXTERNA');
+      }).length;
+    }
+
     const est=String(p.establecimiento_id);
     const statesDest=new Set(['ENVIADO','EN_ATENCION','EVALUADO','HOSPITALIZADO']);
     const statesOrigin=new Set(['RESPUESTA_ENVIADA','RECHAZADO']);
