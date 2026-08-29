@@ -1,6 +1,6 @@
-const CACHE='sirro-v046';
+const CACHE='sirro-v047';
 const ASSETS=[
-  './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg',
+  './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./sirro-theme.css',
   './app-main.js','./sirro-core.js','./startup-ready.js','./auth-security.js','./data-resilience.js','./pending-color-semantics.js',
   './followup.js','./observacion-obstetrica.js','./reportes.js','./pendientes.js','./admin-pruebas.js','./borrado-referencia-pruebas.js',
   './specialty-filter.js','./specialty-transfers.js','./specialty-selector-fix.js','./appointment-role.js','./ce-referral-hint.js',
@@ -24,7 +24,7 @@ self.addEventListener('fetch',e=>{
   const u=new URL(e.request.url);
   const sameOrigin=u.origin===self.location.origin;
   const isNavigation=e.request.mode==='navigate'||u.pathname.endsWith('/index.html')||u.pathname==='/';
-  const isAppAsset=sameOrigin&&/\.(?:js|html|webmanifest)$/.test(u.pathname);
+  const isAppAsset=sameOrigin&&/\.(?:js|css|html|webmanifest)$/.test(u.pathname);
 
   if(sameOrigin&&u.pathname.endsWith('/admin-pruebas.js')){
     e.respondWith((async()=>{
