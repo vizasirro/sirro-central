@@ -1,4 +1,4 @@
-const CACHE='sirro-v059';
+const CACHE='sirro-v060';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./sirro-theme.css',
   './app-main.js','./sirro-core.js','./startup-ready.js','./auth-security.js','./login-stable.js','./data-resilience.js','./pending-color-semantics.js',
