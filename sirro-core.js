@@ -117,6 +117,7 @@
   loadModule('./login-stable.js', 'SIRRO_LOGIN_STABLE');
   loadModule('./data-resilience.js', 'SIRRO_DATA_RESILIENCE');
   loadModule('./pending-color-semantics.js', 'SIRRO_PENDING_COLOR_SEMANTICS');
+  loadModule('./tracking-search-label.js', 'SIRRO_TRACKING_SEARCH_LABEL');
   loadModule('./specialty-filter.js', 'SIRRO_SPECIALTY_FILTER');
   loadModule('./specialty-transfers.js', 'SIRRO_SPECIALTY_TRANSFERS');
   loadModule('./appointment-role.js', 'SIRRO_APPOINTMENT_ROLE');
