@@ -36,7 +36,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 .link-btn{background:transparent;color:#0b6b57;padding:8px;text-decoration:underline}.top-actions{display:flex;gap:8px;align-items:center}.help-btn{background:#fff;color:#0b6b57;border:2px solid #fff;border-radius:8px;min-width:72px}.help-panel{max-width:760px;margin:24px auto}.help-panel ol{padding-left:24px}.help-panel li{margin:8px 0}.help-panel h3{color:#0b6b57}.help-close{float:right}
 .notification-settings{border-top:1px solid #d7e4e0;margin-top:18px;padding-top:16px}.switch-row{display:flex;align-items:center;gap:10px;margin:10px 0}.switch-row input{width:auto;margin:0}.notification-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}.notification-options label{display:flex;align-items:center;gap:9px;font-weight:550}.notification-options input{width:auto;margin:0}.settings-status{margin-top:10px}
 .survey-door{display:block;margin-top:14px;padding:13px 14px;border:2px solid #0b6b57;border-radius:11px;background:#f1f8f6;text-decoration:none;text-align:left}.survey-door strong{display:block;color:#0b6b57;font-size:14px}.survey-door span{display:block;color:#607a74;font-size:12px;line-height:1.4;margin-top:4px}.survey-door b{display:block;color:#0b6b57;font-size:12px;margin-top:8px}
-@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters,.notification-options{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
+.project-gateway{padding:22px}.project-gateway h2{margin:0;text-align:center;font-size:25px}.project-gateway>p{text-align:center;color:#607a74;margin:7px auto 18px;max-width:760px}.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.project-link{display:flex;flex-direction:column;min-height:185px;padding:18px;border:2px solid #cfe0dc;border-radius:14px;background:#fff;color:#17312b;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}.project-link:hover,.project-link:focus{transform:translateY(-2px);box-shadow:0 8px 20px #0b6b5720;border-color:#0b6b57;outline:none}.project-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#0b6b57;color:#fff;font-size:24px;margin-bottom:12px}.project-link strong{font-size:18px;color:#0b6b57}.project-link span{color:#607a74;font-size:13px;line-height:1.45;margin:7px 0 14px}.project-link b{margin-top:auto;color:#0b6b57;font-size:13px}.project-link.survey .project-icon{background:#155e75}.project-link.cold .project-icon{background:#075985}
+@media(max-width:760px){.project-grid{grid-template-columns:1fr}.project-link{min-height:auto}.stats{grid-template-columns:1fr 1fr}.formgrid,.filters,.notification-options{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
 </style>
 </head>
 <body>
@@ -49,6 +50,31 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 </header>
 
 <main class="wrap">
+<section class="card project-gateway" aria-labelledby="projectGatewayTitle">
+  <h2 id="projectGatewayTitle">Proyectos digitales de la Región Sanitaria de Olancho</h2>
+  <p>Seleccione el sistema al que desea ingresar.</p>
+  <div class="project-grid">
+    <a class="project-link" href="#loginView">
+      <span class="project-icon" aria-hidden="true">↗</span>
+      <strong>SIRRO</strong>
+      <span>Sistema de Referencia–Respuesta Olancho.</span>
+      <b>Ingresar a SIRRO →</b>
+    </a>
+    <a class="project-link survey" href="https://encuestas-olancho.vercel.app/login">
+      <span class="project-icon" aria-hidden="true">✓</span>
+      <strong>Encuestas Olancho</strong>
+      <span>Aplicación para la gestión y aplicación de encuestas.</span>
+      <b>Ingresar a Encuestas →</b>
+    </a>
+    <a class="project-link cold" href="https://redfrio-olancho.vercel.app">
+      <span class="project-icon" aria-hidden="true">❄</span>
+      <strong>Semáforo de la Red de Frío</strong>
+      <span>Reporte y monitoreo semanal de las Unidades de Salud.</span>
+      <b>Ingresar a Red de Frío →</b>
+    </a>
+  </div>
+</section>
+
 <section id="loginView" class="card narrow login-card">
   <img src="logo-region-olancho.png" alt="Región Sanitaria de Olancho">
   <h2>Ingreso a SIRRO</h2>
