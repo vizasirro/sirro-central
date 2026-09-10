@@ -32,13 +32,16 @@ const areas={
 "administracion":{number:"09 · Departamento",title:"Departamento de Administración",objective:"Planifica, organiza, dirige, controla y evalúa la administración de bienes, adquisiciones, establecimientos y pagos para el cumplimiento efectivo de los procesos regionales.",functions:["Dirigir, supervisar y controlar las actividades administrativas de la Región.","Administrar los recursos de acuerdo con el plan operativo anual y el presupuesto.","Garantizar la ejecución financiera y la distribución adecuada de los recursos físicos.","Coordinar el presupuesto, las adquisiciones y el suministro de materiales y equipos.","Aplicar los procedimientos administrativos conforme al marco técnico y legal.","Gestionar el sistema de información financiera y suministrar información para la monitoría y evaluación del POA."],positions:["Jefe(a) del Departamento","Secretaria(o)","Unidad Financiera Contable","Auxiliar de Contabilidad","Unidad de Servicios Generales","Mantenimiento","Motorista","Aseo","Vigilancia","Conserjería","Unidad de Bienes Nacionales y Adquisiciones","Auxiliar de Adquisiciones"],relation:"Reporta directamente a la Jefatura Regional y coordina con todas las instancias y con el nivel central."}
 };
 areas.jefatura.facebook="https://www.facebook.com/share/1EjdeZ6bMc/";
+areas.jefatura.facebookLabel="Perfil de Facebook del jefe regional";
+areas.redes.facebook="https://www.facebook.com/share/1HsQMAJMGB/";
+areas.redes.facebookLabel="Perfil de Facebook del jefe de Redes";
 const key=new URLSearchParams(location.search).get("seccion");
 const area=areas[key]||areas.jefatura;
 document.getElementById("number").textContent=area.number;
 document.getElementById("title").textContent=area.title;
 document.getElementById("objective").textContent=area.objective;
 document.getElementById("relation").innerHTML="<strong>Relación organizativa</strong>"+area.relation;
-if(area.facebook){const link=document.createElement("a");link.className="social-link";link.href=area.facebook;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Perfil de Facebook del jefe regional";document.getElementById("socialLinks").appendChild(link);}
+if(area.facebook){const link=document.createElement("a");link.className="social-link";link.href=area.facebook;link.target="_blank";link.rel="noopener noreferrer";link.textContent=area.facebookLabel;document.getElementById("socialLinks").appendChild(link);}
 for(const item of area.functions){const li=document.createElement("li");li.textContent=item;document.getElementById("functions").appendChild(li)}
 for(const item of area.positions){const div=document.createElement("div");div.className="team-item";div.textContent=item;document.getElementById("positions").appendChild(div)}
 document.title=area.title+" | Región Sanitaria de Olancho";
