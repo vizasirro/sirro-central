@@ -36,6 +36,8 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 .link-btn{background:transparent;color:#0b6b57;padding:8px;text-decoration:underline}.top-actions{display:flex;gap:8px;align-items:center}.help-btn{background:#fff;color:#0b6b57;border:2px solid #fff;border-radius:8px;min-width:72px}.help-panel{max-width:760px;margin:24px auto}.help-panel ol{padding-left:24px}.help-panel li{margin:8px 0}.help-panel h3{color:#0b6b57}.help-close{float:right}
 .notification-settings{border-top:1px solid #d7e4e0;margin-top:18px;padding-top:16px}.switch-row{display:flex;align-items:center;gap:10px;margin:10px 0}.switch-row input{width:auto;margin:0}.notification-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}.notification-options label{display:flex;align-items:center;gap:9px;font-weight:550}.notification-options input{width:auto;margin:0}.settings-status{margin-top:10px}
 .survey-door{display:block;margin-top:14px;padding:13px 14px;border:2px solid #0b6b57;border-radius:11px;background:#f1f8f6;text-decoration:none;text-align:left}.survey-door strong{display:block;color:#0b6b57;font-size:14px}.survey-door span{display:block;color:#607a74;font-size:12px;line-height:1.4;margin-top:4px}.survey-door b{display:block;color:#0b6b57;font-size:12px;margin-top:8px}
+.maternal-alert-entry{display:block;width:100%;margin-top:14px;padding:13px 16px;background:#b42318;border:2px solid #8f1d14;box-shadow:0 4px 12px #b4231826;font-size:15px;letter-spacing:.01em}.maternal-alert-entry:hover{background:#941b13}.maternal-alert-entry:focus-visible{outline:3px solid #f6c453;outline-offset:3px}
+.maternal-alert-access{border-top:6px solid #b42318}.maternal-alert-access h2{color:#8f1d14;margin-bottom:6px}.maternal-alert-code{max-width:210px;margin:12px auto 16px!important;text-align:center;font-size:28px;font-weight:800;letter-spacing:.55em;padding-left:calc(10px + .55em);font-variant-numeric:tabular-nums}.maternal-alert-actions{display:grid;gap:9px}.maternal-alert-continue{background:#b42318}.maternal-alert-continue:hover{background:#941b13}
 @media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.formgrid,.filters,.notification-options{grid-template-columns:1fr}.userbar{align-items:flex-start;flex-direction:column}.brand-logo{width:50px;height:50px}}
 </style>
 </head>
@@ -57,9 +59,23 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
   <label>Contraseña<input id="loginPass" type="password" autocomplete="current-password"></label>
   <button id="loginBtn">Ingresar</button>
   <button id="forgotPasswordBtn" type="button" class="link-btn">¿Olvidaste tu contraseña?</button>
+  <button id="openMaternalAlertBtn" type="button" class="maternal-alert-entry">ACTIVAR ALERTA MATERNA</button>
   <button id="installBtn" type="button" class="ghost install-btn">Instalar SIRRO</button>
   <p id="installHelp" class="hint install-help">Instale SIRRO para abrirlo como una aplicación.</p>
   <div id="loginMsg"></div>
+</section>
+
+<section id="maternalAlertAccessView" class="card narrow login-card maternal-alert-access hidden" aria-labelledby="maternalAlertAccessTitle">
+  <h2 id="maternalAlertAccessTitle">Alerta Materna Olancho</h2>
+  <p>Ingrese su código de autorización de cuatro dígitos.</p>
+  <label for="maternalAlertCode">Código de autorización</label>
+  <input id="maternalAlertCode" class="maternal-alert-code" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="one-time-code" aria-describedby="maternalAlertCodeHint maternalAlertAccessMsg">
+  <p id="maternalAlertCodeHint" class="hint">Uso exclusivo de personal autorizado.</p>
+  <div class="maternal-alert-actions">
+    <button id="maternalAlertContinueBtn" type="button" class="maternal-alert-continue">Continuar</button>
+    <button id="backFromMaternalAlertBtn" type="button" class="ghost">Volver al ingreso</button>
+  </div>
+  <div id="maternalAlertAccessMsg" aria-live="polite"></div>
 </section>
 
 <section id="forgotPasswordView" class="card narrow login-card hidden">
@@ -244,6 +260,7 @@ button:disabled{opacity:.55;cursor:not-allowed}.ghost{background:#e9f1ef;color:#
 <script src="./borrado-referencia-pruebas.js"></script>
 <script src="./hospital-referral-specialties.js"></script>
 <script src="./specialty-selector-fix.js"></script>
+<script src="./maternal-alert-access.js"></script>
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}
 </script>

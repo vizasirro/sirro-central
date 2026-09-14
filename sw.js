@@ -1,10 +1,10 @@
-const CACHE='sirro-v069';
+const CACHE='sirro-v070';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./logo-region-olancho.png','./viza-logo.svg','./sirro-theme.css',
   './app-main.js','./sirro-core.js','./startup-ready.js','./auth-security.js','./login-stable.js','./data-resilience.js','./pending-color-semantics.js',
   './followup.js','./observacion-obstetrica.js','./reportes.js','./pendientes.js','./puerperal-window-guard.js','./closed-puerperal-continuity.js','./admin-pruebas.js','./borrado-referencia-pruebas.js',
   './specialty-filter.js','./specialty-transfers.js','./specialty-selector-fix.js','./appointment-role.js','./ce-referral-hint.js',
-  './hospital-profile.js','./gerencia-profile.js','./administrador-profile.js','./maternal-monitor.js','./maternal-monitor-style.js','./regression-guard.js'
+  './hospital-profile.js','./gerencia-profile.js','./administrador-profile.js','./maternal-monitor.js','./maternal-monitor-style.js','./maternal-alert-access.js','./regression-guard.js'
 ];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(a=>new Request(a,{cache:'reload'})))));});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))]));});
