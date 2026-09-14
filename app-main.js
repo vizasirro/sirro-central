@@ -341,7 +341,13 @@ async function sendWhatsappTest(){
   showMsg('#whatsappTestMsg','Enviando prueba segura…');
   try{
     const {data,error}=await sb.functions.invoke('sirro-whatsapp-test',{body:{}});
-    if(error)throw error;
+    if(error){
+      let detail=null;
+      try{detail=await error.context?.json()}catch{}
+      const provider=detail?.provider_code?` (código Meta ${detail.provider_code})`:'';
+      const reason=detail?.provider_message?`: ${detail.provider_message}`:'';
+      throw new Error((detail?.error||error.message||'No se pudo enviar la prueba.')+provider+reason);
+    }
     if(!data?.ok)throw new Error(data?.error||'No se pudo enviar la prueba.');
     showMsg('#whatsappTestMsg','Prueba enviada. Revise el WhatsApp autorizado.','ok');
   }catch(error){

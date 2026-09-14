@@ -79,6 +79,7 @@ Deno.serve(async (req: Request) => {
       error: "Meta no acepto el mensaje de prueba",
       provider_status: metaResponse.status,
       provider_code: metaBody?.error?.code ?? null,
+      provider_message: metaBody?.error?.message ?? null,
     }, 502);
   }
 
