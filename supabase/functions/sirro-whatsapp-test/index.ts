@@ -1,18 +1,28 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.55.0";
 
-const jsonHeaders = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "https://sirro-central.vercel.app",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const allowedOrigins = new Set([
+  "https://sirro.net",
+  "https://www.sirro.net",
+  "https://sirro-central.vercel.app",
+]);
+
+const headersFor = (req: Request) => {
+  const origin = req.headers.get("Origin") ?? "";
+  return {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://sirro.net",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
 };
 
-const respond = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: jsonHeaders });
+const respond = (req: Request, body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: headersFor(req) });
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: jsonHeaders });
-  if (req.method !== "POST") return respond({ error: "Metodo no permitido" }, 405);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: headersFor(req) });
+  if (req.method !== "POST") return respond(req, { error: "Metodo no permitido" }, 405);
 
   const authorization = req.headers.get("Authorization") ?? "";
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -22,7 +32,7 @@ Deno.serve(async (req: Request) => {
     global: { headers: { Authorization: authorization } },
   });
   const { data: { user } } = await userClient.auth.getUser();
-  if (!user) return respond({ error: "No autorizado" }, 401);
+  if (!user) return respond(req, { error: "No autorizado" }, 401);
 
   const { data: profile } = await userClient
     .from("perfiles")
@@ -31,7 +41,7 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
 
   if (profile?.rol !== "ADMIN_REGIONAL" || profile?.estado !== "ACTIVO") {
-    return respond({ error: "Acceso reservado al Administrador Regional activo" }, 403);
+    return respond(req, { error: "Acceso reservado al Administrador Regional activo" }, 403);
   }
 
   const accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") ?? "";
@@ -39,7 +49,7 @@ Deno.serve(async (req: Request) => {
   const recipient = Deno.env.get("WHATSAPP_TEST_RECIPIENT") ?? "";
 
   if (!accessToken || !/^\d+$/.test(phoneNumberId) || !/^\d{8,15}$/.test(recipient)) {
-    return respond({ error: "Configuracion de WhatsApp incompleta" }, 503);
+    return respond(req, { error: "Configuracion de WhatsApp incompleta" }, 503);
   }
 
   const metaResponse = await fetch(
@@ -65,14 +75,14 @@ Deno.serve(async (req: Request) => {
   const metaBody = await metaResponse.json().catch(() => ({}));
   if (!metaResponse.ok) {
     console.error("Meta WhatsApp test failed", metaResponse.status, metaBody);
-    return respond({
+    return respond(req, {
       error: "Meta no acepto el mensaje de prueba",
       provider_status: metaResponse.status,
       provider_code: metaBody?.error?.code ?? null,
     }, 502);
   }
 
-  return respond({
+  return respond(req, {
     ok: true,
     message_id: metaBody?.messages?.[0]?.id ?? null,
     note: "Prueba sin datos de pacientes",
