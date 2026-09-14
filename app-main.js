@@ -296,6 +296,7 @@ function renderNotifications(){
   $('#notificationCount').textContent=unread?`(${unread})`:'';
   $('#notificationsList').innerHTML=notifications.map(n=>`<div class="item"><strong>${esc(n.titulo)}</strong>${n.critica?' · CRÍTICA':''}<br><span>${esc(n.mensaje)}</span><br><small>${fmt(n.creada_en)} · ${n.leida?'Leída':`<button class="ghost" onclick="markNotificationRead('${n.id}')">Marcar leída</button>`}</small></div>`).join('')||'<p class="muted">Sin notificaciones.</p>';
   renderEmailPreferences();
+  renderWhatsappTest();
 }
 const emailPreferenceFields={
   NUEVA_REFERENCIA:'nueva_referencia',REFERENCIA_URGENTE:'referencia_urgente',RESPUESTA_DISPONIBLE:'respuesta_disponible',
@@ -327,6 +328,27 @@ async function saveEmailPreferences(){
   });
   if(error)return showMsg('#emailPreferencesMsg',error.message,'error');
   await loadEmailPreferences();renderEmailPreferences();showMsg('#emailPreferencesMsg','Preferencias de correo guardadas correctamente.','ok');
+}
+function renderWhatsappTest(){
+  const settings=$('#whatsappTestSettings');
+  if(!settings)return;
+  settings.classList.toggle('hidden',!isAdmin());
+}
+async function sendWhatsappTest(){
+  if(!isAdmin())return showMsg('#whatsappTestMsg','Acceso no autorizado.','error');
+  const button=$('#sendWhatsappTestBtn');
+  button.disabled=true;
+  showMsg('#whatsappTestMsg','Enviando prueba segura…');
+  try{
+    const {data,error}=await sb.functions.invoke('sirro-whatsapp-test',{body:{}});
+    if(error)throw error;
+    if(!data?.ok)throw new Error(data?.error||'No se pudo enviar la prueba.');
+    showMsg('#whatsappTestMsg','Prueba enviada. Revise el WhatsApp autorizado.','ok');
+  }catch(error){
+    showMsg('#whatsappTestMsg',error?.message||'No se pudo enviar la prueba.','error');
+  }finally{
+    button.disabled=false;
+  }
 }
 function toggleOtherReason(){
   const isOther=$('#refReason').value==='OTRO';
@@ -537,6 +559,7 @@ $('#userForm').addEventListener('submit',createUser); $('#newRole').addEventList
 $('#newScope').addEventListener('change',userRoleUI); $('#newMunicipio').addEventListener('change',fillUserEstablishments);
 $('#setResetKeyBtn').onclick=configureResetKey; $('#resetAllBtn').onclick=resetAllTestData;
 $('#emailNotificationsEnabled').addEventListener('change',toggleEmailPreferenceOptions); $('#saveEmailPreferencesBtn').onclick=saveEmailPreferences;
+$('#sendWhatsappTestBtn').onclick=sendWhatsappTest;
 $('#refreshBtn').onclick=refreshAll; $('#searchRef').addEventListener('input',renderTracking); $('#statusFilter').addEventListener('change',renderTracking);
 
 sb.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')showPasswordRecovery()});
